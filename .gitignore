@@ -1,2 +1,4 @@
+.lein-*
 .nrepl-*
 target
+pom.xml
