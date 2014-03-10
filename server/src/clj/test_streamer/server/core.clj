@@ -1,18 +1,21 @@
-(ns test-streamer.server
+(ns test-streamer.server.core
   (:require [clojure.edn :as edn]
-            [test-streamer.page :as page])
+            [compojure.route :as route]
+            [test-streamer.server.page :as page]
+            [ring.util.response :as response])
   (:use [lamina.core]
         [aleph.http]
+        [compojure.core :only [defroutes GET POST ANY]]
+        [compojure.handler :only [site]]
         [clojure.tools.logging :only [info debug]]
-        [ring.middleware.params :only [wrap-params]]
-        [ring.middleware.keyword-params :only [wrap-keyword-params]]
-        [test-streamer.util :only [available-port]])
+        [ring.middleware.reload :only [wrap-reload]]
+        [test-streamer.server.util :only [available-port]])
   (:import [net.unit8.wscl ClassProvider]
            [java.net InetAddress]))
 
 (defonce clients (atom {}))
 (defonce config (atom {}))
-(defonce test-shots (atom []))
+(defonce test-shots (atom {}))
 
 (def test-queue (permanent-channel))
 
@@ -38,9 +41,9 @@
 
 (defn submit-tests [tests & opts]
   (let [shot-id (.toString (java.util.UUID/randomUUID))]
-    (swap! test-shots conj {:shot-id shot-id
-                            :submitted-at (java.util.Date.)
-                            :results (apply hash-map (interleave tests (repeat nil)))})
+    (swap! test-shots assoc shot-id
+      {:submitted-at (java.util.Date.)
+       :results (apply hash-map (interleave tests (repeat nil)))})
     (doseq [test tests]
       (enqueue test-queue (pr-str {:shot-id shot-id :name test})))))
 
@@ -54,7 +57,9 @@
 (defmethod handle :ready
   ([msg ch]
     (info "Ready client " (.hashCode ch))
-    (swap! clients assoc-in [ch :status] :stand-by)
+    (swap! clients assoc ch
+      (merge {:status :stand-by}
+        (dissoc msg :command)))
     (on-closed ch (fn []
                     (info "Disconnect client " (.hashCode ch))
                     (swap! clients dissoc ch)))))
@@ -65,25 +70,34 @@
     (swap! test-shots assoc-in [(:shot-id msg) :results (:name msg)] (:result msg))
     (swap! clients assoc-in [ch :status] :stand-by)))
 
-(def handle-http
-  (-> (fn [request]
-        (case (:uri request)
-          "/submit" (let [test (get-in request [:params :test])]
-                      (submit-tests [test])
-                      (info "Submit test " test request)
-                      (enqueue (:channel request) {:status 200 :body "Accept!"}))
-          "/" (enqueue (:channel request) {:status 200 :body (page/index-page @test-shots)})
-          (enqueue (:channel request) {:status 404 :body "404 Not Found"})))
-    (wrap-keyword-params)
-    (wrap-params)))
-
 (defn handler [ch request]
-  (cond
-    (:websocket request) (receive-all ch
-                           (fn [msg]
-                             (let [command (edn/read-string msg)]
-                               (handle command ch))))
-    (= (:scheme request) :http) (handle-http (assoc request :channel ch))))
+  (receive-all ch
+    (fn [msg]
+      (let [command (edn/read-string msg)]
+        (handle command ch)))))
+
+(defn- exists-class? [class-name]
+  (and class-name
+       (-> (Thread/currentThread)
+           (.getContextClassLoader)
+           (.getResource (str (.replace class-name \. \/) ".class")))))
+
+(defroutes app-routes
+  (GET "/join" []
+    (wrap-websocket-handler handler))
+  (ANY "/submit" {{test :test} :params :as request}
+    (if (exists-class? test) 
+      (do
+        (submit-tests [test])
+        (info "Submit test " test request)
+        (response/redirect "/"))
+      (str "Reject! " test " not found.")))
+  (GET "/report/:shot-id" [shot-id]
+    (page/report-page (get @test-shots shot-id)))
+  (GET "/" []
+    (page/index-page :shots @test-shots :clients @clients))
+  (route/resources "/")
+  (route/not-found "Not Found"))
 
 (defn stop []
   (when-let [svr-stop-fn (:test-provider @config)]
@@ -95,11 +109,11 @@
   (when-let [dispatcher (:dispatcher @config)]
     (.interrupt dispatcher)))
 
-
 (defn start [port]
   (let [port (Integer. (or port 5000))]
     (swap! config assoc
-      :test-provider  (start-http-server handler
+      :test-provider  (start-http-server
+                        (wrap-ring-handler (wrap-reload (site app-routes)))
                         {:port port
                          :websocket true})
       :class-provider (ClassProvider.)
@@ -111,8 +125,8 @@
         (swap! config assoc
           :class-provider-port class-provider-port)
         (.start (:class-provider @config) class-provider-port)
-        (info "Started class provider (port=" class-provider-port ")")
-        (receive test-queue #()))
+        (info "Started class provider (port=" class-provider-port ")"))
       (stop))))
 
+(defn main-for-test [& args] (start 5050))
 

@@ -1,4 +1,4 @@
-(ns test-streamer.output
+(ns test-streamer.server.output
   (:use [hiccup.core]))
 
 (defn to-xml [result]

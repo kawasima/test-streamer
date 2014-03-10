@@ -1,4 +1,4 @@
-(ns test-streamer.util
+(ns test-streamer.server.util
   (:import [java.net Socket]))
 
 (defn available-port

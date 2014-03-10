@@ -1,8 +1,8 @@
-(ns test-streamer.client
-  (:require [clojure.edn :as edn])
+(ns test-streamer.client.core
+  (:require [clojure.edn :as edn]
+            [test-streamer.client.ui :as ui])
   (:use [lamina.core]
-        [aleph.http]
-        [clojure.tools.logging :only [info debug]])
+        [aleph.http])
   (:import [org.junit.runner JUnitCore]
            [java.net InetAddress]
            [net.unit8.wscl WebSocketClassLoader]))
@@ -19,7 +19,9 @@
     (.addListener core
       (proxy
         [org.junit.runner.notification.RunListener] []
-        (testRunStarted [description])
+        (testRunStarted [description]
+          (ui/running (.getDisplayName description)))
+        
         (testStarted [description]
           (swap! results update-in [:testcases]
             #(conj % (-> (bean description)
@@ -51,19 +53,33 @@
           (swap! results assoc :time (.getRunTime result)))))
     core))
 
+(defn- client-spec []
+  (let [mx (java.lang.management.ManagementFactory/getOperatingSystemMXBean)]
+    {:os-name (.getName mx)
+     :os-version (.getVersion mx)
+     :cpu-arch (.getArch mx)
+     :cpu-core (.getAvailableProcessors mx)}))
+
 (defmulti handle :command)
 
 (defmethod handle :class-provider-url [msg ch]
   (reset! class-provider-url (:url msg))
-  (enqueue ch (pr-str {:command :ready
-                       :client-name (.getHostName (InetAddress/getLocalHost))})))
+  (enqueue ch (pr-str (merge {:command :ready
+                              :client-name (.getHostName (InetAddress/getLocalHost))}
+                        (client-spec)))))
 
 (defmethod handle :do-test [msg ch]
   (let [loader (WebSocketClassLoader. @class-provider-url)
         test-class (.loadClass loader (:name msg) true)
         test-classes (into-array Class [test-class])
-        results (atom {:testcases [] :tests 0 :errors 0 :failures 0})]
-    (.run (junit-core results) test-classes)
+        results (atom {:testcases [] :tests 0 :errors 0 :failures 0})
+        original-loader (.getContextClassLoader (Thread/currentThread))]
+    (.setContextClassLoader (Thread/currentThread) loader)
+    (try
+      (.run (junit-core results) test-classes)
+      (finally
+        (.setContextClassLoader (Thread/currentThread) original-loader)
+        (ui/standby)))
     (enqueue ch (pr-str {:command :result
                          :shot-id (:shot-id msg)
                          :name    (:name msg)
@@ -76,8 +92,11 @@
       (try
         (reset! c (websocket-client {:url test-server-url}))
         (let [ch (wait-for-result @c)]
-          (on-closed ch (fn [] (connect test-server-url)))
+          (on-closed ch (fn []
+                          (ui/disconnect)
+                          (connect test-server-url)))
           (receive-all ch #(handle (edn/read-string %) ch))
+          (ui/standby)
           (enqueue ch (pr-str {:command :class-provider-url})))
         (catch Exception e
           (println (.getMessage e))
@@ -85,7 +104,8 @@
           (Thread/sleep 5000))))))
 
 (defn start [test-server-url]
+  (ui/create-tray-icon)
   (connect test-server-url))
 
 (defn -main [& args]
-  (start "ws://localhost:5050"))
+  (start "ws://localhost:5050/join"))
