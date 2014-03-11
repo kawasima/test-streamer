@@ -6,4 +6,5 @@
                  [commons-io/commons-io "2.4"]]
   :source-paths ["src/clj"]
   :java-source-paths ["src/java"]
+  :jvm-opts ["-Dsun.zip.disableMemoryMapping"]
   :main test-streamer.examples.simple-server)

@@ -72,4 +72,8 @@
             [:tr
               [:td (:methodName tc)]
               [:td
-                [:pre (or :error tc) (:failure tc)]]]])))))
+                [:pre (or (:error tc ) (:failure tc)) ]]]])))))
+
+(defn client-page []
+  (layout
+    [:a {:href "http://labs.unit8.net/test-streamer-client.jnlp"} "Launch Client"]))

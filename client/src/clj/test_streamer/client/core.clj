@@ -3,6 +3,7 @@
             [test-streamer.client.ui :as ui])
   (:use [lamina.core]
         [aleph.http])
+  (:gen-class)
   (:import [org.junit.runner JUnitCore]
            [java.net InetAddress]
            [net.unit8.wscl WebSocketClassLoader]))

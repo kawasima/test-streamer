@@ -3,4 +3,7 @@
                  [net.unit8.wscl/websocket-classloader "0.1.0-SNAPSHOT"]
                  [junit/junit "4.11"]
                  [aleph "0.3.2"]]
-  :source-paths ["src/clj"])
+  :source-paths ["src/clj"]
+  :aot [test-streamer.client.core]
+  :main test-streamer.client.core
+  :uberjar-name "client.jar")

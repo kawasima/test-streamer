@@ -94,6 +94,8 @@
       (str "Reject! " test " not found.")))
   (GET "/report/:shot-id" [shot-id]
     (page/report-page (get @test-shots shot-id)))
+  (GET "/client" []
+    (page/client-page))
   (GET "/" []
     (page/index-page :shots @test-shots :clients @clients))
   (route/resources "/")
@@ -115,7 +117,8 @@
       :test-provider  (start-http-server
                         (wrap-ring-handler (wrap-reload (site app-routes)))
                         {:port port
-                         :websocket true})
+                         :websocket true
+                         :netty {:pipeline-transform #(doto % (.remove "deflater"))}})
       :class-provider (ClassProvider.)
       :dispatcher     (Thread. dispatcher))
     (.start (:dispatcher @config))
