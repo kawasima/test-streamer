@@ -1,11 +1,12 @@
 (ns test-streamer.server.page
-  (:use [hiccup core page]))
+  (:use [hiccup core page element]))
 
 (defmacro layout [& body]
   `(html5
      [:head
-       [:link {:rel "stylesheet" :href "//yui.yahooapis.com/pure/0.4.2/pure-min.css"}]
-       [:link {:rel "stylesheet" :href "/css/test-streamer.css"}]]
+       [:link {:rel "stylesheet" :href "/css/pure-min.css"}]
+       [:link {:rel "stylesheet" :href "/css/test-streamer.css"}]
+       [:script {:src "/js/test-streamer.js"}]]
      [:body
        [:div.header
          [:div.pure-menu.pure-menu-open.pure-menu-horizontal
@@ -35,11 +36,22 @@
     
     [:h2.content-subhead "Test shots"]
     [:table.pure-table
-      (for [[shot-id shot] (sort-by #(-> (second %) :updated-at) shots)]
+      [:thead
         [:tr
-          [:td 
-            [:a {:href (str "/report/" shot-id)} shot-id]]
-          [:td (:submitted-at shot)]])]
+          [:th "Shot ID"]
+          [:th "Submit Time"]
+          [:th "Status"]]]
+      (for [[shot-id shot] (sort-by #(-> (second %) :updated-at) shots)]
+        (let [progress (- 100 (float (/ (* 100 (count (filter nil? (vals (:results shot)))))
+                                       (count (vals (:results shot))))))]
+          [:tr
+            [:td 
+              [:a {:href (str "/report/" shot-id)} shot-id]]
+            [:td (:submitted-at shot)]
+            [:td.number (format "%.1f%%" progress)]
+            [:td
+              (when (= progress 100.0)
+                [:a {:href (str "/report" shot-id ".xml")} "report"])]]))]
     [:h2.content-subhead "Submit tests"]
     [:form.pure-form {:method "post" :action "/submit"}
       [:fieldset
@@ -49,6 +61,7 @@
 
 (defn report-page [shot]
   (layout
+    [:h2 "All Tests"]
     [:table.pure-table
       [:thead
         [:tr
@@ -56,23 +69,37 @@
           [:th "Tests"]
           [:th "Failures"]
           [:th "Errors"]
-          [:th "Times"]]]
+          [:th "Duration"]]]
       (for [[test-class result] (sort (:results shot))]
         [:tr
           [:td test-class]
-          [:td (:tests result)]
-          [:td (:failures result)]
-          [:td (:errors result)]
-          [:td (:time result)]])]
+          (if result
+            (html
+              [:td.number (:tests result)]
+              [:td.number (:failures result)]
+              [:td.number (:errors result)]
+              [:td.number (format "%.3f" (float (/ (:time result) 1000)))])
+            [:td {:colspan 4} "Wait for executing..."])])]
 
     (for [[test-class result] (sort (:results shot))]
       (when (and result (> (:errors result) 0))
-        (for [tc (:testcases result) :when (or (:error tc) (:failure tc))]
-          [:table.pure-table
-            [:tr
-              [:td (:methodName tc)]
-              [:td
-                [:pre (or (:error tc ) (:failure tc)) ]]]])))))
+        (html
+          [:h2 "All Failed Tests"]
+          [:table.pure-table.pure-table-bordered
+            [:thead
+              [:tr
+                [:th "Test Name"]
+                [:th "Duration"]]]
+            (for [tc (:testcases result) :when (or (:error tc) (:failure tc))]
+              [:tr.failed-test
+                [:td
+                  [:a.failed-test-name {:href "#"} (str (:className tc) "." (:methodName tc))]
+                  [:div.failed-test-detail
+                    [:pre (or (get-in tc [:error :stacktrace])
+                            (get-in tc [:failure :stacktrace]))]]]
+                [:td.number (format "%.3f" (float (/ (:time tc) 1000)))]])])))
+    (javascript-tag
+      "test_streamer.core.setup_report()")))
 
 (defn client-page []
   (layout

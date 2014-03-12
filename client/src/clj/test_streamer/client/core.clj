@@ -6,7 +6,8 @@
   (:gen-class)
   (:import [org.junit.runner JUnitCore]
            [java.net InetAddress]
-           [net.unit8.wscl WebSocketClassLoader]))
+           [net.unit8.wscl WebSocketClassLoader]
+           [junit.framework AssertionFailedError]))
 
 (defonce class-provider-url (atom nil))
 
@@ -15,13 +16,28 @@
     (.printStackTrace t (java.io.PrintWriter. wtr))
     (.toString wtr)))
 
+(defn add-failure [results failure]
+  (swap! results update-in [:failures] inc)
+  (swap! results assoc-in [:testcases (dec (count (:testcases @results))) :failure]
+    {:type (type (.getException failure))
+     :message (.getMessage failure)
+     :stacktrace (extract-stack-trace (.getException failure))}))
+
+(defn add-error [results failure]
+  (swap! results update-in [:errors] inc)
+  (swap! results assoc-in [:testcases (dec (count (:testcases @results))) :error]
+    {:type (type (.getException failure))
+     :message (.getMessage failure)
+     :stacktrace (extract-stack-trace (.getException failure))}))
+
 (defn junit-core [results]
   (let [core (JUnitCore.)]
     (.addListener core
       (proxy
         [org.junit.runner.notification.RunListener] []
         (testRunStarted [description]
-          (ui/running (.getDisplayName description)))
+          (println (bean description))
+          (ui/running (-> (bean description) :children first)))
         
         (testStarted [description]
           (swap! results update-in [:testcases]
@@ -29,11 +45,9 @@
                        (select-keys [:suite :test :className :methodName])
                        (assoc :time (System/currentTimeMillis))))))
         (testFailure [failure]
-          (swap! results update-in [:errors] inc)
-          (swap! results assoc-in [:testcases (dec (count (:testcases @results))) :error]
-            {:type (type (.getException failure))
-             :message (.getMessage failure)
-             :stacktrace (extract-stack-trace (.getException failure))}))
+          (if (some #{AssertionError AssertionFailedError} [(type (.getException failure))])
+            (add-failure results failure)
+            (add-error results failure)))
 
         (testAssumtionFailure [failure]
           (swap! results update-in [:failures] inc)
@@ -78,6 +92,8 @@
     (.setContextClassLoader (Thread/currentThread) loader)
     (try
       (.run (junit-core results) test-classes)
+      (catch Exception ex
+        (swap! results assoc :client-exception (.getMessage ex)))
       (finally
         (.setContextClassLoader (Thread/currentThread) original-loader)
         (ui/standby)))
@@ -109,4 +125,5 @@
   (connect test-server-url))
 
 (defn -main [& args]
+  #_(start "ws://labs.unit8.net:5050/join")
   (start "ws://localhost:5050/join"))

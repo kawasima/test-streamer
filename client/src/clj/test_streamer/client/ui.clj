@@ -28,7 +28,8 @@
 
 (defn disconnect []
   (.setImage *icon* img-disconnect)
-  (.displayMessage *icon* "TestStreamer" "Disconnected from server."))
+  (.displayMessage *icon* "TestStreamer" "Disconnected from server."
+    (TrayIcon$MessageType/WARNING)))
 
 (defn remove-tray-icon []
   (let [tray (SystemTray/getSystemTray)]

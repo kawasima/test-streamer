@@ -1,3 +1,26 @@
 #content {
     padding: 1em 2em;
 }
+
+.header {
+    background-image: url(header-bg.png);
+    background-repeat: repeat;
+    border-bottom: 1px;
+    border-color: #ccc;
+    box-shadow: 0px 1px 30px #999;
+    border-bottom-style: solid;
+}
+
+.pure-menu .pure-menu-heading {
+    font-size: 16pt;
+    margin-top: .5em;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+    border-bottom-color: #dfdfdf;
+    text-shadow: 2px 2px 1px #666, -2px 2px 1px #666, 2px -2px 1px #666, -2px -2px 1px #666;
+    font-weight: bold;
+}
+
+.number {
+  text-align: right;
+}

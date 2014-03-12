@@ -6,4 +6,5 @@
   :source-paths ["src/clj"]
   :aot [test-streamer.client.core]
   :main test-streamer.client.core
+  :jvm-opts ["-Dwscl.cache.directory=/home/kawasima/.wscl-cache"]
   :uberjar-name "client.jar")

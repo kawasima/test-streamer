@@ -11,7 +11,8 @@
         [ring.middleware.reload :only [wrap-reload]]
         [test-streamer.server.util :only [available-port]])
   (:import [net.unit8.wscl ClassProvider]
-           [java.net InetAddress]))
+           [java.net InetAddress]
+           [java.nio.file FileSystems Paths Files SimpleFileVisitor FileVisitResult LinkOption]))
 
 (defonce clients (atom {}))
 (defonce config (atom {}))
@@ -67,7 +68,9 @@
 (defmethod handle :result
   ([msg ch]
     (info "Test finished! " (:result msg))
-    (swap! test-shots assoc-in [(:shot-id msg) :results (:name msg)] (:result msg))
+    (if-let [client-exception (get-in msg [:result :client-exception])]
+      (enqueue test-queue (pr-str (select-keys msg [:shot-id :name]))) ;; Push back when unexpected errors occurs in a client.
+      (swap! test-shots assoc-in [(:shot-id msg) :results (:name msg)] (:result msg)))
     (swap! clients assoc-in [ch :status] :stand-by)))
 
 (defn handler [ch request]
@@ -76,22 +79,37 @@
       (let [command (edn/read-string msg)]
         (handle command ch)))))
 
-(defn- exists-class? [class-name]
-  (and class-name
-       (-> (Thread/currentThread)
-           (.getContextClassLoader)
-           (.getResource (str (.replace class-name \. \/) ".class")))))
+(defn- file-to-class [path]
+  (.replace
+    (.replaceAll (str path) "\\.class$" "") 
+    (.getSeparator (FileSystems/getDefault)) "."))
+
+(defn- scan-tests [ptn]
+  (let [matcher (.getPathMatcher (FileSystems/getDefault) (str "glob:" ptn))
+        tests (atom [])]
+    (doseq [root (->> (.. (Thread/currentThread) getContextClassLoader getURLs)
+                      (filter #(= (.getProtocol %) "file"))
+                      (map #(Paths/get (.toURI %)))
+                      (filter #(Files/isDirectory % (make-array LinkOption 0))))]
+      (Files/walkFileTree root
+        (proxy [SimpleFileVisitor] []
+          (visitFile [path attrs]
+            (let [rel-path (.relativize root path)]
+              (when (.matches matcher rel-path)
+                (swap! tests conj (file-to-class rel-path))))
+            FileVisitResult/CONTINUE))))
+    (not-empty @tests)))
 
 (defroutes app-routes
   (GET "/join" []
     (wrap-websocket-handler handler))
-  (ANY "/submit" {{test :test} :params :as request}
-    (if (exists-class? test) 
+  (ANY "/submit" {{ptn :test} :params :as request}
+    (if-let [tests (scan-tests ptn)]
       (do
-        (submit-tests [test])
-        (info "Submit test " test request)
+        (submit-tests tests)
+        (info "Submit test " ptn request)
         (response/redirect "/"))
-      (str "Reject! " test " not found.")))
+      (str "Reject! " ptn " not found.")))
   (GET "/report/:shot-id" [shot-id]
     (page/report-page (get @test-shots shot-id)))
   (GET "/client" []

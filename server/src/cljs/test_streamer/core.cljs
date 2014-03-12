@@ -1,8 +1,10 @@
 (ns test-streamer.core
-  (:use [goog.dom :only [getElement]]
-        [goog.event :only [listen]]))
+  (:require [goog.dom :as dom]
+            [goog.ui.AnimatedZippy :as AnimatedZippy]))
 
-(defn []
-  (let [submit-form (getElement "submit-form")]
-    (listen submit-form EventType/SUBMIT))
-  )
+(defn ^:export setup-report []
+  (doseq [failed-test (array-seq (dom/getElementsByClass "failed-test"))]
+    (goog.ui.AnimatedZippy.
+      (dom/getElementByClass "failed-test-name" failed-test)
+      (dom/getElementByClass "failed-test-detail" failed-test)
+      false)))
