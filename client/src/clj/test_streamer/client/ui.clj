@@ -1,7 +1,8 @@
 (ns test-streamer.client.ui
   (:require [clojure.java.io :as io])
   (:import [java.awt SystemTray TrayIcon TrayIcon$MessageType
-             MenuItem]
+             MenuItem PopupMenu MenuItem]
+           [java.awt.event ActionListener]
            [javax.imageio ImageIO]))
 
 (def ^:dynamic *icon*)
@@ -12,7 +13,15 @@
 
 (defn create-tray-icon []
   (let [tray (SystemTray/getSystemTray)
-        icon (TrayIcon. img-disconnect "TestStreamer")]
+        menu (PopupMenu.)
+        exit-menu (MenuItem. "Exit")
+        icon (TrayIcon. img-disconnect "TestStreamer" menu)]
+    (.addActionListener
+     exit-menu
+     (proxy [ActionListener] []
+       (actionPerformed [event]
+         (System/exit 0))))
+    (.add menu exit-menu)
     (.add tray icon)
     (alter-var-root (var *icon*)
       (constantly icon))

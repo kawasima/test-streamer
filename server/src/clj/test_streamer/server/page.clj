@@ -26,14 +26,14 @@
             [:th "OS"]
             [:th "CPU"]
             [:th "Status"]]]
-        
+
         (for [[ch client] clients]
           [:tr
             [:td (:client-name client)]
             [:td (:os-name client) (:os-version client)]
             [:td (:cpu-arch client) " " (:cpu-core client) "cores"]
             [:td (:status client)]])])
-    
+
     [:h2.content-subhead "Test shots"]
     (if (empty? shots)
       "No shots found."
@@ -48,14 +48,14 @@
           (let [progress (- 100 (float (/ (* 100 (count (filter nil? (vals (:results shot)))))
                                          (count (vals (:results shot))))))]
             [:tr
-              [:td 
+              [:td
                 [:a {:href (str "/report/" shot-id)} shot-id]]
               [:td (:submitted-at shot)]
               [:td.number (format "%.1f%%" progress)]
               [:td
                 (when (= progress 100.0)
                   [:a {:href (str "/report" shot-id ".xml")} "report"])]]))])
-    
+
     [:h2.content-subhead "Submit tests"]
     [:form.pure-form {:method "post" :action "/submit"}
       [:fieldset
@@ -117,4 +117,4 @@
 
 (defn client-page []
   (layout
-    [:a {:href "http://labs.unit8.net/test-streamer-client.jnlp"} "Launch Client"]))
+    [:a {:href "/test-streamer-client.jnlp"} "Launch Client"]))

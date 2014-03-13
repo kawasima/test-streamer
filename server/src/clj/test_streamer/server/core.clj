@@ -2,6 +2,7 @@
   (:require [clojure.edn :as edn]
             [compojure.route :as route]
             [test-streamer.server.page :as page]
+            [test-streamer.server.output :as output]
             [ring.util.response :as response])
   (:use [lamina.core]
         [aleph.http]
@@ -28,7 +29,7 @@
 
 (defn dispatcher []
   (try
-    (while (not (Thread/interrupted)) 
+    (while (not (Thread/interrupted))
       (let [test-request (edn/read-string @(read-channel test-queue))]
         (info "Dispatcher: processing a test-request: " test-request)
         (loop [ch (find-stand-by)]
@@ -84,7 +85,7 @@
 
 (defn- file-to-class [path]
   (.replace
-    (.replaceAll (str path) "\\.class$" "") 
+    (.replaceAll (str path) "\\.class$" "")
     (.getSeparator (FileSystems/getDefault)) "."))
 
 (defn- scan-tests [ptn]
@@ -130,6 +131,12 @@
   (GET "/test-queue" []
     {:status 200
       :body (str (count test-queue)) })
+  (GET "/test-streamer-client.jnlp" [:as request]
+    (output/jnlp request))
+  (GET "/client.jar" [:as request]
+    (output/client-jar))
+  (GET "/client.jar.pack.gz" [:as request]
+    (output/client-jar :compress true))
   (GET "/" []
     (page/index-page :shots @test-shots :clients @clients))
   (route/resources "/")
@@ -162,6 +169,9 @@
         (swap! config assoc
           :class-provider-port class-provider-port)
         (.start (:class-provider @config) class-provider-port)
+        (.addShutdownHook (Runtime/getRuntime)
+                          (Thread. (fn [] (stop)
+                                     (info "Stop test streamer server. See you next time!"))))
         (info "Started class provider (port=" class-provider-port ")"))
       (stop))))
 

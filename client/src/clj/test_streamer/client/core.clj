@@ -6,6 +6,7 @@
   (:gen-class)
   (:import [org.junit.runner JUnitCore]
            [java.net InetAddress]
+           [java.security Policy Permissions AllPermission]
            [net.unit8.wscl WebSocketClassLoader]
            [junit.framework AssertionFailedError]))
 
@@ -37,14 +38,13 @@
         [org.junit.runner.notification.RunListener] []
         (testRunStarted [description]
           (ui/running (-> (bean description) :children first)))
-        
+
         (testStarted [description]
           (swap! results update-in [:testcases]
             #(conj % (-> (bean description)
                        (select-keys [:suite :test :className :methodName])
                        (assoc :time (System/currentTimeMillis))))))
         (testFailure [failure]
-          (println (bean failure))
           (if (some #{AssertionError AssertionFailedError} [(type (.getException failure))])
             (add-failure results failure)
             (add-error results failure)))
@@ -118,7 +118,8 @@
                           (connect test-server-url)))
           (receive-all ch #(handle (edn/read-string %) ch))
           (ui/standby)
-          (enqueue ch (pr-str {:command :class-provider-url})))
+          (enqueue ch (pr-str {:command :class-provider-url}))
+          ch)
         (catch Exception e
           (println (.getMessage e))
           (reset! c nil)
@@ -126,8 +127,17 @@
 
 (defn start [test-server-url]
   (ui/create-tray-icon)
-  (connect test-server-url))
+  (let [conn (connect test-server-url)]
+    (.addShutdownHook (Runtime/getRuntime)
+                      (Thread. #(when conn (close conn))))))
 
-(defn -main [& args]
-  #_(start "ws://labs.unit8.net:5050/join")
-  (start "ws://localhost:5050/join"))
+(defn -main [& [server-url]]
+  (System/setSecurityManager nil)
+  (Policy/setPolicy
+   (proxy [Policy][]
+     (getPermissions [codesource]
+                     (let [perms (Permissions.)]
+                       (.add perms (AllPermission.))
+                       perms))
+     (refresh [])))
+  (start (str (or server-url "ws://localhost:5050") "/join")))
