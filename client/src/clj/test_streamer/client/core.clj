@@ -36,7 +36,6 @@
       (proxy
         [org.junit.runner.notification.RunListener] []
         (testRunStarted [description]
-          (println (bean description))
           (ui/running (-> (bean description) :children first)))
         
         (testStarted [description]
@@ -45,6 +44,7 @@
                        (select-keys [:suite :test :className :methodName])
                        (assoc :time (System/currentTimeMillis))))))
         (testFailure [failure]
+          (println (bean failure))
           (if (some #{AssertionError AssertionFailedError} [(type (.getException failure))])
             (add-failure results failure)
             (add-error results failure)))
@@ -102,6 +102,10 @@
                          :name    (:name msg)
                          :result  @results}))))
 
+(defmethod handle :benchmark [msg ch]
+  (let [t1 (System/nanoTime)]
+    (eval msg)
+    (enqueue ch (pr-str (float (/ (- (System/nanoTime) t1) 1000000))))))
 
 (defn connect [test-server-url]
   (let [c (atom nil)]

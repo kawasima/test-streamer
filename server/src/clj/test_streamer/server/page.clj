@@ -9,8 +9,8 @@
        [:script {:src "/js/test-streamer.js"}]]
      [:body
        [:div.header
-         [:div.pure-menu.pure-menu-open.pure-menu-horizontal
-           [:a.pure-menu-heading {:href "#"} "Test Streamer"]]]
+         [:div.pure-menu.pure-menu-horizontal
+           [:a.pure-menu-heading {:href "/"} "Test Streamer"]]]
        [:div#content.pure-g
          [:div.pure-u-1 ~@body]]]))
 
@@ -35,23 +35,27 @@
             [:td (:status client)]])])
     
     [:h2.content-subhead "Test shots"]
-    [:table.pure-table
-      [:thead
-        [:tr
-          [:th "Shot ID"]
-          [:th "Submit Time"]
-          [:th "Status"]]]
-      (for [[shot-id shot] (sort-by #(-> (second %) :updated-at) shots)]
-        (let [progress (- 100 (float (/ (* 100 (count (filter nil? (vals (:results shot)))))
-                                       (count (vals (:results shot))))))]
+    (if (empty? shots)
+      "No shots found."
+      [:table.pure-table
+        [:thead
           [:tr
-            [:td 
-              [:a {:href (str "/report/" shot-id)} shot-id]]
-            [:td (:submitted-at shot)]
-            [:td.number (format "%.1f%%" progress)]
-            [:td
-              (when (= progress 100.0)
-                [:a {:href (str "/report" shot-id ".xml")} "report"])]]))]
+            [:th "Shot ID"]
+            [:th "Submit Time"]
+            [:th "Status"]
+            [:th "Report"]]]
+        (for [[shot-id shot] (sort-by #(-> (second %) :updated-at) shots)]
+          (let [progress (- 100 (float (/ (* 100 (count (filter nil? (vals (:results shot)))))
+                                         (count (vals (:results shot))))))]
+            [:tr
+              [:td 
+                [:a {:href (str "/report/" shot-id)} shot-id]]
+              [:td (:submitted-at shot)]
+              [:td.number (format "%.1f%%" progress)]
+              [:td
+                (when (= progress 100.0)
+                  [:a {:href (str "/report" shot-id ".xml")} "report"])]]))])
+    
     [:h2.content-subhead "Submit tests"]
     [:form.pure-form {:method "post" :action "/submit"}
       [:fieldset
@@ -100,6 +104,16 @@
                 [:td.number (format "%.3f" (float (/ (:time tc) 1000)))]])])))
     (javascript-tag
       "test_streamer.core.setup_report()")))
+
+(defn classpaths-page [classpaths]
+  (layout
+    [:form.pure-form {:method "POST"}
+      [:fieldset
+        [:input.pure-input-1-2 {:type "text" :name "path"}]
+        [:button.pure-button.pure-button-primary {:type "submit"} "Add"]]]
+    [:ul
+      (for [path classpaths]
+        [:li path])]))
 
 (defn client-page []
   (layout

@@ -13,6 +13,8 @@
 
 .pure-menu .pure-menu-heading {
     font-size: 16pt;
+    color: #f0f0c0;
+    text-transform:none;
     margin-top: .5em;
     border-bottom-width: 1px;
     border-bottom-style: solid;

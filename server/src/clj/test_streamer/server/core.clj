@@ -27,18 +27,21 @@
     @clients))
 
 (defn dispatcher []
-  (while (not (Thread/interrupted)) 
-    (let [test-request (edn/read-string @(read-channel test-queue))]
-      (loop [ch (find-stand-by)]
-        (if ch
-          (do
-            (info "Dispatch test (" (:name test-request) ") to " (.hashCode ch))
-            (swap! clients assoc-in [ch :status] :busy)
-            (enqueue ch (pr-str (assoc test-request :command :do-test))))
-          (do
-            (Thread/sleep 3000)
-            (info "No available clients.")
-            (recur (find-stand-by)))))))) 
+  (try
+    (while (not (Thread/interrupted)) 
+      (let [test-request (edn/read-string @(read-channel test-queue))]
+        (info "Dispatcher: processing a test-request: " test-request)
+        (loop [ch (find-stand-by)]
+          (if ch
+            (do
+              (info "Dispatch test (" (:name test-request) ") to " (.hashCode ch))
+              (swap! clients assoc-in [ch :status] :busy)
+              (enqueue ch (pr-str (assoc test-request :command :do-test))))
+            (do
+              (Thread/sleep 3000)
+              (info "No available clients.")
+              (recur (find-stand-by)))))))
+    (catch Exception ex (.printStackTrace ex))))
 
 (defn submit-tests [tests & opts]
   (let [shot-id (.toString (java.util.UUID/randomUUID))]
@@ -87,7 +90,7 @@
 (defn- scan-tests [ptn]
   (let [matcher (.getPathMatcher (FileSystems/getDefault) (str "glob:" ptn))
         tests (atom [])]
-    (doseq [root (->> (.. (Thread/currentThread) getContextClassLoader getURLs)
+    (doseq [root (->> (.getClasspath (:class-provider @config))
                       (filter #(= (.getProtocol %) "file"))
                       (map #(Paths/get (.toURI %)))
                       (filter #(Files/isDirectory % (make-array LinkOption 0))))]
@@ -107,13 +110,26 @@
     (if-let [tests (scan-tests ptn)]
       (do
         (submit-tests tests)
-        (info "Submit test " ptn request)
+        (info "Submit test " tests request)
         (response/redirect "/"))
       (str "Reject! " ptn " not found.")))
+  (GET "/report/:shot-id.:format" [shot-id fmt]
+    (page/report-page (get @test-shots shot-id)))
   (GET "/report/:shot-id" [shot-id]
     (page/report-page (get @test-shots shot-id)))
+  (GET "/classpaths" []
+    (page/classpaths-page (.getClasspath (:class-provider @config))))
+  (POST "/classpaths" {{path :path} :params}
+    (let [new-paths (into-array java.net.URL
+                      (conj (seq (.getClasspath (:class-provider @config)))
+                        (java.net.URL. path)))]
+      (.setClasspath (:class-provider @config) new-paths))
+    (response/redirect "/classpaths"))
   (GET "/client" []
     (page/client-page))
+  (GET "/test-queue" []
+    {:status 200
+      :body (str (count test-queue)) })
   (GET "/" []
     (page/index-page :shots @test-shots :clients @clients))
   (route/resources "/")
