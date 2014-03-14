@@ -9,8 +9,11 @@
        [:script {:src "/js/test-streamer.js"}]]
      [:body
        [:div.header
-         [:div.pure-menu.pure-menu-horizontal
-           [:a.pure-menu-heading {:href "/"} "Test Streamer"]]]
+         [:div.pure-menu.pure-menu-open.pure-menu-horizontal
+           [:a.pure-menu-heading {:href "/"} "Test Streamer"]
+           [:ul
+             [:li [:a {:href "/client"} "client"]]
+             [:li [:a {:href "/classpaths"} "classpath"]]]]]
        [:div#content.pure-g
          [:div.pure-u-1 ~@body]]]))
 
@@ -59,7 +62,6 @@
     [:h2.content-subhead "Submit tests"]
     [:form.pure-form {:method "post" :action "/submit"}
       [:fieldset
-        [:legend "Test classes"]
         [:input {:type "text" :name "test"}]
         [:button.pure-button.pure-button-primary {:type "submit"} "execute"]]]))
 
@@ -85,23 +87,22 @@
               [:td.number (format "%.3f" (float (/ (:time result) 1000)))])
             [:td {:colspan 4} "Wait for executing..."])])]
 
-    (for [[test-class result] (sort (:results shot))]
-      (when (and result (> (:errors result) 0))
-        (html
-          [:h2 "All Failed Tests"]
-          [:table.pure-table.pure-table-bordered
-            [:thead
-              [:tr
-                [:th "Test Name"]
-                [:th "Duration"]]]
-            (for [tc (:testcases result) :when (or (:error tc) (:failure tc))]
-              [:tr.failed-test
-                [:td
-                  [:a.failed-test-name {:href "#"} (str (:className tc) "." (:methodName tc))]
-                  [:div.failed-test-detail
-                    [:pre (or (get-in tc [:error :stacktrace])
-                            (get-in tc [:failure :stacktrace]))]]]
-                [:td.number (format "%.3f" (float (/ (:time tc) 1000)))]])])))
+    [:h2 "All Failed Tests"]
+    [:table.pure-table.pure-table-bordered
+      [:thead
+        [:tr
+          [:th "Test Name"]
+          [:th "Duration"]]]
+      (for [[test-class result] (sort (:results shot))]
+        (when (and result (> (:errors result) 0))
+          (for [tc (:testcases result) :when (or (:error tc) (:failure tc))]
+            [:tr.failed-test
+              [:td
+                [:a.failed-test-name {:href "#"} (str (:className tc) "." (:methodName tc))]
+                [:div.failed-test-detail
+                  [:pre (or (get-in tc [:error :stacktrace])
+                          (get-in tc [:failure :stacktrace]))]]]
+              [:td.number (format "%.3f" (float (/ (:time tc) 1000)))]])))]
     (javascript-tag
       "test_streamer.core.setup_report()")))
 
@@ -117,4 +118,10 @@
 
 (defn client-page []
   (layout
-    [:a {:href "/test-streamer-client.jnlp"} "Launch Client"]))
+    [:script {:src "http://java.com/js/deployJava.js"}]
+    [:h2 "TestStreamer Client"]
+    (javascript-tag
+      "var url = \"/test-streamer-client.jnlp\";
+       deployJava.createWebStartLaunchButton (url, '1.6.0');")
+    [:p "If you get a security warning, you select 'Medium' security level. Please refer to "
+      [:a {:href "https://www.java.com/en/download/help/jcp_security.xml"} "this."]]))

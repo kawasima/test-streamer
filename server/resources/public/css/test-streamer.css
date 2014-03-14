@@ -1,6 +1,18 @@
 #content {
     padding: 1em 2em;
 }
+h2 {
+    margin: 1em 0 0.5em 0;
+    font-weight: 600;
+    font-family: 'Titillium Web', sans-serif;
+    position: relative;
+    text-shadow: 0 -1px 1px rgba(0,0,0,0.4);
+    font-size: 22px;
+    line-height: 40px;
+    color: #355681;
+    border-bottom: 1px solid rgba(0, 0, 0, .2);
+    -webkit-box-shadow: rgba(255, 255, 255, .6) 0 1px 0;
+}
 
 .header {
     background-image: url(header-bg.png);
@@ -11,9 +23,22 @@
     border-bottom-style: solid;
 }
 
+.pure-menu.pure-menu-open {
+    background-color: transparent;
+}
+
+.pure-menu a {
+    color: #f0f0e0;
+    text-shadow: 2px 2px 1px #666, -2px 2px 1px #666, 2px -2px 1px #666, -2px -2px 1px #666;
+}
+
+.pure-menu li a:hover {
+    background-color: rgba(255,255,200,0.4);
+}
+
 .pure-menu .pure-menu-heading {
     font-size: 16pt;
-    color: #f0f0c0;
+    color: #f0f0e0;
     text-transform:none;
     margin-top: .5em;
     border-bottom-width: 1px;

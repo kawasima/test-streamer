@@ -10,7 +10,6 @@
 
 (defn jnlp [req]
   (let [localhost (InetAddress/getLocalHost)]
-    (println "jnlp:" req)
     {:status 200
      :headers {"Content-Type" "application/x-java-jnlp-file"}
      :body (html
