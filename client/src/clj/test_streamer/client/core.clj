@@ -5,12 +5,12 @@
         [aleph.http])
   (:gen-class)
   (:import [org.junit.runner JUnitCore]
-           [java.net InetAddress]
+           [java.net InetAddress URI]
            [java.security Policy Permissions AllPermission]
            [net.unit8.wscl WebSocketClassLoader]
            [junit.framework AssertionFailedError]))
 
-(defonce class-provider-url (atom nil))
+(def config (atom {}))
 
 (defn extract-stack-trace [^:Throwable t]
   (with-open [wtr (java.io.StringWriter.)]
@@ -77,26 +77,27 @@
 
 (defmulti handle :command)
 
-(defmethod handle :class-provider-url [msg ch]
-  (reset! class-provider-url (:url msg))
+(defmethod handle :class-provider-port [msg ch]
+  (swap! config assoc :class-provider-url
+         (str "ws://" (:server-host @config) ":" (:port msg)))
   (enqueue ch (pr-str (merge {:command :ready
-                              :client-name (.getHostName (InetAddress/getLocalHost))}
+                             :client-name (.getHostName (InetAddress/getLocalHost))}
                         (client-spec)))))
 
 (defmethod handle :do-test [msg ch]
-  (let [loader (WebSocketClassLoader. @class-provider-url)
-        test-class (.loadClass loader (:name msg) true)
-        test-classes (into-array Class [test-class])
-        results (atom {:testcases [] :tests 0 :errors 0 :failures 0})
+  (let [results (atom {:testcases [] :tests 0 :errors 0 :failures 0})
         original-loader (.getContextClassLoader (Thread/currentThread))]
-    (.setContextClassLoader (Thread/currentThread) loader)
     (try
-      (.run (junit-core results) test-classes)
+      (let [loader (WebSocketClassLoader. (:class-provider-url @config))
+            test-class (.loadClass loader (:name msg) true)
+            test-classes (into-array Class [test-class])]
+        (.setContextClassLoader (Thread/currentThread) loader)
+        (.run (junit-core results) test-classes))
       (catch Exception ex
         (swap! results assoc :client-exception (.getMessage ex)))
       (finally
-        (.setContextClassLoader (Thread/currentThread) original-loader)
-        (ui/standby)))
+       (.setContextClassLoader (Thread/currentThread) original-loader)
+       (ui/standby)))
     (enqueue ch (pr-str {:command :result
                          :shot-id (:shot-id msg)
                          :name    (:name msg)
@@ -118,7 +119,7 @@
                           (connect test-server-url)))
           (receive-all ch #(handle (edn/read-string %) ch))
           (ui/standby)
-          (enqueue ch (pr-str {:command :class-provider-url}))
+          (enqueue ch (pr-str {:command :class-provider-port}))
           ch)
         (catch Exception e
           (println (.getMessage e))
@@ -128,6 +129,7 @@
 (defn start [test-server-url]
   (ui/create-tray-icon)
   (let [conn (connect test-server-url)]
+    (swap! config assoc :server-host (.getHost (URI. test-server-url)))
     (.addShutdownHook (Runtime/getRuntime)
                       (Thread. #(when conn (close conn))))))
 

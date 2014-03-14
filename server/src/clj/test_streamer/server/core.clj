@@ -54,11 +54,11 @@
 
 (defmulti handle :command)
 
-(defmethod handle :class-provider-url
+(defmethod handle :class-provider-port
   ([msg ch]
-    (enqueue ch (pr-str {:command :class-provider-url
-                         :url (str "ws://" (.getHostAddress (InetAddress/getLocalHost))
-                                ":" (:class-provider-port @config))}))))
+    (enqueue ch (pr-str {:command :class-provider-port
+                         :port (:class-provider-port @config)}))))
+
 (defmethod handle :ready
   ([msg ch]
     (info "Ready client " (.hashCode ch))
@@ -73,9 +73,12 @@
   ([msg ch]
     (info "Test finished! " (:result msg))
     (if-let [client-exception (get-in msg [:result :client-exception])]
-      (enqueue test-queue (pr-str (select-keys msg [:shot-id :name]))) ;; Push back when unexpected errors occurs in a client.
-      (swap! test-shots assoc-in [(:shot-id msg) :results (:name msg)] (:result msg)))
-    (swap! clients assoc-in [ch :status] :stand-by)))
+      (do
+        (enqueue test-queue (pr-str (select-keys msg [:shot-id :name]))) ;; Push back when unexpected errors occurs in a client.
+        (swap! clients assoc-in [ch :status] :error))
+      (do
+        (swap! test-shots assoc-in [(:shot-id msg) :results (:name msg)] (:result msg))
+        (swap! clients assoc-in [ch :status] :stand-by)))))
 
 (defn handler [ch request]
   (receive-all ch
