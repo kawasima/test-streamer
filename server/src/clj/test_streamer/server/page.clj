@@ -98,7 +98,7 @@
           (for [tc (:testcases result) :when (or (:error tc) (:failure tc))]
             [:tr.failed-test
               [:td
-                [:a.failed-test-name {:href "#"} (str (:className tc) "." (:methodName tc))]
+                [:div.failed-test-name (str (:className tc) "." (:methodName tc))]
                 [:div.failed-test-detail
                   [:pre (or (get-in tc [:error :stacktrace])
                           (get-in tc [:failure :stacktrace]))]]]
