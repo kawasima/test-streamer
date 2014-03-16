@@ -16,7 +16,7 @@
             (xml-declaration "UTF-8")
             [:jnlp {:spec "6.0+"
                     :codebase (str "http://"
-                                   (.getHostName localhost) ":"
+                                   (:server-name req) ":"
                                    (:server-port req))
                     :href "test-streamer-client.jnlp"}
              [:information
@@ -27,10 +27,10 @@
              [:resources
               [:property {:name "jnlp.packEnabled" :value "false"}]
               [:jar {:href (str "http://"
-                                   (.getHostName localhost) ":"
+                                   (:server-name req) ":"
                                    (:server-port req) "/client.jar")}]]
              [:application-desc {:main-class "test_streamer.client.core"}
-              [:argument (str "ws://" (.getHostName localhost) ":"
+              [:argument (str "ws://" (:server-name req) ":"
                               (:server-port req))]]])}))
 
 (defn client-jar [& {compress? :compress}]
