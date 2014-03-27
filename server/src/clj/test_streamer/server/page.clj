@@ -52,17 +52,17 @@
                                          (count (vals (:results shot))))))]
             [:tr
               [:td
-                [:a {:href (str "/report/" shot-id)} shot-id]]
+                [:a {:href (str "/test-shots/" shot-id)} shot-id]]
               [:td (:submitted-at shot)]
               [:td.number (format "%.1f%%" progress)]
               [:td
                 (when (= progress 100.0)
-                  [:a {:href (str "/report" shot-id ".xml")} "report"])]]))])
+                  [:a {:href (str "/test-shots/" shot-id ".xml")} "report"])]]))])
 
     [:h2.content-subhead "Submit tests"]
-    [:form.pure-form {:method "post" :action "/submit"}
+    [:form.pure-form {:method "post" :action "/test-shots"}
       [:fieldset
-        [:input {:type "text" :name "test"}]
+        [:input {:type "text" :name "include"}]
         [:button.pure-button.pure-button-primary {:type "submit"} "execute"]]]))
 
 (defn report-page [shot]

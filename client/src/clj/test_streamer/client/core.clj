@@ -88,12 +88,16 @@
   (let [results (atom {:testcases [] :tests 0 :errors 0 :failures 0})
         original-loader (.getContextClassLoader (Thread/currentThread))]
     (try
-      (let [loader (WebSocketClassLoader. (:class-provider-url @config))
+      (let [url (str (:class-provider-url @config)
+                     "?classLoaderId="
+                     (:classloader-id msg))
+            loader (WebSocketClassLoader. url)
             test-class (.loadClass loader (:name msg) true)
             test-classes (into-array Class [test-class])]
         (.setContextClassLoader (Thread/currentThread) loader)
         (.run (junit-core results) test-classes))
       (catch Exception ex
+        (.printStackTrace ex)
         (swap! results assoc :client-exception (.getMessage ex)))
       (finally
        (.setContextClassLoader (Thread/currentThread) original-loader)
