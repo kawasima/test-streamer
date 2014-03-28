@@ -40,10 +40,15 @@
           (ui/running (-> (bean description) :children first)))
 
         (testStarted [description]
-          (swap! results update-in [:testcases]
-            #(conj % (-> (bean description)
-                       (select-keys [:suite :test :className :methodName])
-                       (assoc :time (System/currentTimeMillis))))))
+          (let [desc (bean description)]
+            (swap! results update-in [:testcases]
+              #(conj % (-> desc
+                         (select-keys [:suite :test])
+                         (assoc
+                           :classname (:className desc)
+                           :name (:methodName desc)
+                           :time (System/currentTimeMillis)))))))
+
         (testFailure [failure]
           (if (some #{AssertionError AssertionFailedError} [(type (.getException failure))])
             (add-failure results failure)
@@ -85,7 +90,7 @@
                         (client-spec)))))
 
 (defmethod handle :do-test [msg ch]
-  (let [results (atom {:testcases [] :tests 0 :errors 0 :failures 0})
+  (let [results (atom {:name (:name msg) :testcases [] :tests 0 :errors 0 :failures 0 :skipped 0})
         original-loader (.getContextClassLoader (Thread/currentThread))]
     (try
       (let [url (str (:class-provider-url @config)

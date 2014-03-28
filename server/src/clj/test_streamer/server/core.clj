@@ -68,6 +68,8 @@
         (swap! clients assoc-in [ch :status] :error))
       (do
         (swap! test-shots/entries assoc-in [(.toString (:shot-id msg)) :results (:name msg)] (:result msg))
+        ;; (if (test-shots/progress  (:shot-id msg))
+        ;;   (enqueue ))
         (swap! clients assoc-in [ch :status] :stand-by)))))
 
 (defn handler [ch request]
@@ -83,6 +85,8 @@
   (ANY "/test-shots" [] test-shots/list-test-shots)
   (ANY "/test-shots/:shot-id" [shot-id]
     (test-shots/entry-test-shot shot-id))
+  (GET "/test-shots/:shot-id/report" [shot-id]
+    (test-shots/entry-test-shot-report shot-id))
   (GET "/client" []
     (page/client-page))
   (GET "/test-streamer-client.jnlp" [:as request]

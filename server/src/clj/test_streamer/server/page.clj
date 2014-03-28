@@ -57,7 +57,7 @@
               [:td.number (format "%.1f%%" progress)]
               [:td
                 (when (= progress 100.0)
-                  [:a {:href (str "/test-shots/" shot-id ".xml")} "report"])]]))])
+                  [:a {:href (str "/test-shots/" shot-id "/report")} "report"])]]))])
 
     [:h2.content-subhead "Submit tests"]
     [:form.pure-form {:method "post" :action "/test-shots"}
@@ -98,7 +98,7 @@
           (for [tc (:testcases result) :when (or (:error tc) (:failure tc))]
             [:tr.failed-test
               [:td
-                [:div.failed-test-name (str (:className tc) "." (:methodName tc))]
+                [:div.failed-test-name (str (:classname tc) "." (:name tc))]
                 [:div.failed-test-detail
                   [:pre (or (get-in tc [:error :stacktrace])
                           (get-in tc [:failure :stacktrace]))]]]

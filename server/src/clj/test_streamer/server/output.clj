@@ -3,10 +3,18 @@
   (:require [clojure.java.io :as io])
   (:import [java.net InetAddress]))
 
-(defn to-xml [result]
+(defn to-xml [results]
   (html
     (xml-declaration "UTF-8")
-    [:testsuite {:name (:result)}]))
+    [:testsuites
+      (for [[id result] results]
+        [:testsuite (select-keys result [:name :time :tests :failures :errors :skipped])
+          (for [tc (:testcases result)]
+            [:testcase (select-keys tc [:time :classname :name])
+              (if-let [failure (:failure tc)]
+                [:failure (select-keys failure [:type :message]) (:stacktrace failure)]
+                (when-let [error (:error tc)]
+                  [:error (select-keys error [:type :message]) (:stacktrace error)]))])])]))
 
 (defn jnlp [req]
   (let [localhost (InetAddress/getLocalHost)]

@@ -1,5 +1,6 @@
 (ns test-streamer.server.test-shots
-  (:require [test-streamer.server.page :as page])
+  (:require [test-streamer.server.page :as page]
+            [test-streamer.server.output :as output])
   (:use [liberator.core :only [defresource]]
         [lamina.core]
         [clojure.tools.logging :only [info debug]])
@@ -10,6 +11,11 @@
 (defonce class-provider (ClassProvider.))
 
 (def shots-queue (permanent-channel))
+
+(defn progress [shot-id]
+  (let [shot (get @entries shot-id)]
+    (- 100 (float (/ (* 100 (count (filter nil? (vals (:results shot)))))
+                    (count (vals (:results shot))))))))
 
 (defn- vectorize [v]
   (cond
@@ -74,7 +80,8 @@
            (submit-tests
              (or shot-id (java.util.UUID/randomUUID))
              tests
-             :classpaths classpaths))
+             :classpaths classpaths)
+           {::id shot-id})
   :post-redirect? (fn [ctx]
                     (case (get-in ctx [:representation :media-type])
                       ("text/html" "application/xhtml+xml")
@@ -93,3 +100,12 @@
                  ("application/json")
                  (get @entries id))))
 
+(defresource entry-test-shot-report [id]
+  :allowd-methods [:get]
+  :available-media-types ["application/json" "text/html"]
+  :handle-ok (fn [ctx]
+               (case (get-in ctx [:representation :media-type])
+                 ("text/html" "application/xhtml+xml")
+                 (output/to-xml (get-in @entries [id :results])) 
+                 ("application/json")
+                 ())))
