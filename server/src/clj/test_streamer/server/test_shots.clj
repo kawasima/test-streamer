@@ -13,9 +13,11 @@
 (def shots-queue (permanent-channel))
 
 (defn progress [shot-id]
-  (let [shot (get @entries shot-id)]
-    (- 100 (float (/ (* 100 (count (filter nil? (vals (:results shot)))))
-                    (count (vals (:results shot))))))))
+  (let [shot (get @entries shot-id)
+        prog (- 100 (float (/ (* 100 (count (filter nil? (vals (:results shot)))))
+                             (count (vals (:results shot))))))]
+    (swap! entries assoc-in [shot-id :progress] prog)
+    prog))
 
 (defn- vectorize [v]
   (cond
@@ -58,6 +60,8 @@
     (swap! entries assoc (.toString shot-id)
       {:id shot-id
        :submitted-at (java.util.Date.)
+       :progress 0.0
+       :complete? (promise)
        :classloader-id  classloader-id
        :results (apply hash-map (interleave tests (repeat nil)))})
     (doseq [test tests]
@@ -76,7 +80,7 @@
                             (when-let [tests (scan-tests (vectorize include) classpaths)]
                               {::tests tests ::classpaths classpaths})))
   :exists? false
-  :post! (fn [{classpaths ::classpaths tests ::tests {{shot-id "shotId"} :params} :request}]
+  :post! (fn [{classpaths ::classpaths tests ::tests {{shot-id :shotId} :params} :request req :request}]
            (submit-tests
              (or shot-id (java.util.UUID/randomUUID))
              tests
@@ -102,10 +106,11 @@
 
 (defresource entry-test-shot-report [id]
   :allowd-methods [:get]
-  :available-media-types ["application/json" "text/html"]
-  :handle-ok (fn [ctx]
-               (case (get-in ctx [:representation :media-type])
-                 ("text/html" "application/xhtml+xml")
-                 (output/to-xml (get-in @entries [id :results])) 
-                 ("application/json")
-                 ())))
+  :available-media-types ["text/xml" "text/html"]
+  :service-available? (fn [ctx]
+                        (if-let  [complete? (get-in @entries [id :complete?])]
+                          (when (deref complete? 30000 false)
+                            {::xml (output/to-xml (get-in @entries [id :results]))})
+                          true))
+  :exists? ::xml
+  :handle-ok ::xml)

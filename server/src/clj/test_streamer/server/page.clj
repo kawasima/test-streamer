@@ -12,8 +12,7 @@
          [:div.pure-menu.pure-menu-open.pure-menu-horizontal
            [:a.pure-menu-heading {:href "/"} "Test Streamer"]
            [:ul
-             [:li [:a {:href "/client"} "client"]]
-             [:li [:a {:href "/classpaths"} "classpath"]]]]]
+             [:li [:a {:href "/client"} "client"]]]]]
        [:div#content.pure-g
          [:div.pure-u-1 ~@body]]]))
 
@@ -84,7 +83,7 @@
               [:td.number (:tests result)]
               [:td.number (:failures result)]
               [:td.number (:errors result)]
-              [:td.number (format "%.3f" (float (/ (:time result) 1000)))])
+              [:td.number (format "%.3f" (:time result))])
             [:td {:colspan 4} "Wait for executing..."])])]
 
     [:h2 "All Failed Tests"]
@@ -102,7 +101,7 @@
                 [:div.failed-test-detail
                   [:pre (or (get-in tc [:error :stacktrace])
                           (get-in tc [:failure :stacktrace]))]]]
-              [:td.number (format "%.3f" (float (/ (:time tc) 1000)))]])))]
+              [:td.number (format "%.3f" (:time tc))]])))]
     (javascript-tag
       "test_streamer.core.setup_report()")))
 

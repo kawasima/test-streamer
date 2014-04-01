@@ -11,6 +11,7 @@
            [junit.framework AssertionFailedError]))
 
 (def config (atom {}))
+(def loaders (atom {}))
 
 (defn extract-stack-trace [^:Throwable t]
   (with-open [wtr (java.io.StringWriter.)]
@@ -67,10 +68,10 @@
         (testFinished [description]
           (swap! results update-in [:tests] inc)
           (swap! results update-in [:testcases (dec (count (:testcases @results))) :time]
-            #(- (System/currentTimeMillis) %)))
+            #(float (/ (- (System/currentTimeMillis) %) 1000))))
 
         (testRunFinished [result]
-          (swap! results assoc :time (.getRunTime result)))))
+          (swap! results assoc :time (float (/ (.getRunTime result) 1000))))))
     core))
 
 (defn- client-spec []
@@ -96,11 +97,14 @@
       (let [url (str (:class-provider-url @config)
                      "?classLoaderId="
                      (:classloader-id msg))
-            loader (WebSocketClassLoader. url)
+            t1 (System/currentTimeMillis)
+            loader (or (get @loaders (:classloader-id msg))
+                       (WebSocketClassLoader. url))
             test-class (.loadClass loader (:name msg) true)
             test-classes (into-array Class [test-class])]
         (.setContextClassLoader (Thread/currentThread) loader)
-        (.run (junit-core results) test-classes))
+        (.run (junit-core results) test-classes)
+        (swap! loaders assoc (:classloader-id msg) loader))
       (catch Exception ex
         (.printStackTrace ex)
         (swap! results assoc :client-exception (.getMessage ex)))
@@ -151,4 +155,4 @@
                        (.add perms (AllPermission.))
                        perms))
      (refresh [])))
-  (start (str (or server-url "ws://localhost:5050") "/join")))
+  (start (str (or server-url "ws://localhost:5000") "/join")))

@@ -4,7 +4,7 @@
   (:import [java.net InetAddress]))
 
 (defn to-xml [results]
-  (html
+  (html {:mode :xml}
     (xml-declaration "UTF-8")
     [:testsuites
       (for [[id result] results]
@@ -12,9 +12,9 @@
           (for [tc (:testcases result)]
             [:testcase (select-keys tc [:time :classname :name])
               (if-let [failure (:failure tc)]
-                [:failure (select-keys failure [:type :message]) (:stacktrace failure)]
+                [:failure (select-keys failure [:type :message]) (h (:stacktrace failure))]
                 (when-let [error (:error tc)]
-                  [:error (select-keys error [:type :message]) (:stacktrace error)]))])])]))
+                  [:error (select-keys error [:type :message]) (h (:stacktrace error))]))])])]))
 
 (defn jnlp [req]
   (let [localhost (InetAddress/getLocalHost)]

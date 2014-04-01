@@ -9,4 +9,5 @@
   :javac-options ["-target" "1.6" "-source" "1.6" "-Xlint:-options"]
   :uberjar-name "client.jar"
   :manifest {"Manifest-Version" "1.0"
-             "Permissions" "all-permissions"})
+             "Permissions" "all-permissions"}
+  :profiles {:dev {:jvm-opts ["-Dwscl.cache.directory=${user.home}/.wscl-cache"]}})

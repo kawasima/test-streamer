@@ -17,6 +17,7 @@
 
 (defonce clients (atom {}))
 (defonce config (atom {}))
+(defonce available-clients (atom nil))
 
 
 (defn find-stand-by []
@@ -37,8 +38,9 @@
               (swap! clients assoc-in [ch :status] :busy)
               (enqueue ch (pr-str (assoc test-request :command :do-test))))
             (do
-              (Thread/sleep 3000)
-              (info "No available clients.")
+              (reset! available-clients (promise))
+              (when-not (deref @available-clients 3000 false)
+                (info "No available clients.")) 
               (recur (find-stand-by)))))))
     (catch Exception ex (.printStackTrace ex))))
 
@@ -64,13 +66,15 @@
     (info "Test finished! " (:result msg))
     (if-let [client-exception (get-in msg [:result :client-exception])]
       (do
-        (enqueue test-shots/shots-queue (pr-str (select-keys msg [:shot-id :name]))) ;; Push back when unexpected errors occurs in a client.
+        ;; Push back when unexpected errors occurs in a client.
+        (enqueue test-shots/shots-queue (pr-str (select-keys msg [:shot-id :name :classloader-id]))) 
         (swap! clients assoc-in [ch :status] :error))
       (do
-        (swap! test-shots/entries assoc-in [(.toString (:shot-id msg)) :results (:name msg)] (:result msg))
-        ;; (if (test-shots/progress  (:shot-id msg))
-        ;;   (enqueue ))
-        (swap! clients assoc-in [ch :status] :stand-by)))))
+        (swap! test-shots/entries assoc-in [(str (:shot-id msg)) :results (:name msg)] (:result msg))
+        (if (= (test-shots/progress (str (:shot-id msg))) 100.0)
+          (deliver (get-in @test-shots/entries [(str (:shot-id msg)) :complete?]) true))
+        (swap! clients assoc-in [ch :status] :stand-by)
+        (deliver @available-clients true)))))
 
 (defn handler [ch request]
   (receive-all ch
@@ -108,12 +112,12 @@
   (when-let [dispatcher (:dispatcher @config)]
     (.interrupt dispatcher)))
 
-(defn start [port]
+(defn start [& {port :port}]
   (let [port (Integer. (or port 5000))]
     (swap! config assoc
       :test-provider  (start-http-server
                         (wrap-ring-handler (-> app-routes
-                                               (dev/wrap-trace :header)
+                                               ;;(dev/wrap-trace :header)
                                                site
                                                wrap-reload))
                         {:port port
@@ -133,5 +137,5 @@
         (info "Started class provider (port=" class-provider-port ")"))
       (stop))))
 
-(defn main-for-test [& args] (start 5050))
+(defn main-for-test [& args] (start))
 
