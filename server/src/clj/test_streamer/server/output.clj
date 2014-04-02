@@ -11,10 +11,15 @@
         [:testsuite (select-keys result [:name :time :tests :failures :errors :skipped])
           (for [tc (:testcases result)]
             [:testcase (select-keys tc [:time :classname :name])
-              (if-let [failure (:failure tc)]
-                [:failure (select-keys failure [:type :message]) (h (:stacktrace failure))]
-                (when-let [error (:error tc)]
-                  [:error (select-keys error [:type :message]) (h (:stacktrace error))]))])])]))
+              (cond
+                (:failure tc)
+                [:failure (select-keys (:failure tc) [:type :message]) (h (get-in tc [:failure :stacktrace]))]
+
+                (:error tc)
+                [:error (select-keys (:error tc) [:type :message]) (h (get-in tc [:error :stacktrace]))]
+
+                (:skip? tc)
+                [:skipped])])])]))
 
 (defn jnlp [req]
   (let [localhost (InetAddress/getLocalHost)]

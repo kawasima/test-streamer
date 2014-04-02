@@ -4,7 +4,7 @@
                  [junit/junit "4.11"]
                  [aleph "0.3.2"]]
   :source-paths ["src/clj"]
-  :aot [test-streamer.client.core]
+  :aot [test-streamer.client.core test-streamer.client.applet]
   :main test-streamer.client.core
   :javac-options ["-target" "1.6" "-source" "1.6" "-Xlint:-options"]
   :uberjar-name "client.jar"

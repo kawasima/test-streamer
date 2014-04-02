@@ -74,6 +74,7 @@
           [:th "Tests"]
           [:th "Failures"]
           [:th "Errors"]
+          [:th "Skipped"]
           [:th "Duration"]]]
       (for [[test-class result] (sort (:results shot))]
         [:tr
@@ -83,6 +84,7 @@
               [:td.number (:tests result)]
               [:td.number (:failures result)]
               [:td.number (:errors result)]
+              [:td.number (:skipped result)]
               [:td.number (format "%.3f" (:time result))])
             [:td {:colspan 4} "Wait for executing..."])])]
 
@@ -93,7 +95,7 @@
           [:th "Test Name"]
           [:th "Duration"]]]
       (for [[test-class result] (sort (:results shot))]
-        (when (and result (> (:errors result) 0))
+        (when (and result (or (> (:errors result) 0) (> (:failures result) 0)))
           (for [tc (:testcases result) :when (or (:error tc) (:failure tc))]
             [:tr.failed-test
               [:td
@@ -123,4 +125,9 @@
       "var url = \"/test-streamer-client.jnlp\";
        deployJava.createWebStartLaunchButton (url, '1.6.0');")
     [:p "If you get a security warning, you select 'Medium' security level. Please refer to "
-      [:a {:href "https://www.java.com/en/download/help/jcp_security.xml"} "this."]]))
+      [:a {:href "https://www.java.com/en/download/help/jcp_security.xml"} "this."]]
+    
+    [:hr]
+    [:applet {:archive "client.jar" :code "test_streamer.client.ClientApplet"
+               :width "400" :height "250"}
+      [:param {:name "permissions" :value "all-permissions"}]]))

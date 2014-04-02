@@ -7,6 +7,7 @@
   (:import [org.junit.runner JUnitCore]
            [java.net InetAddress URI]
            [java.security Policy Permissions AllPermission]
+           [java.lang.reflect Modifier]
            [net.unit8.wscl WebSocketClassLoader]
            [junit.framework AssertionFailedError]))
 
@@ -51,9 +52,16 @@
                            :time (System/currentTimeMillis)))))))
 
         (testFailure [failure]
-          (if (some #{AssertionError AssertionFailedError} [(type (.getException failure))])
+          (cond
+            (some #{AssertionError AssertionFailedError} [(type (.getException failure))])
             (add-failure results failure)
-            (add-error results failure)))
+
+            (Modifier/isAbstract (some-> (.getDescription failure) (.getTestClass) (.getModifires)))
+            (do
+              (swap! results update-in [:skipped] inc)
+              (swap! results update-in [:testcases (dec (count (:testcases @results))) :skip?] true))
+
+            :default (add-error results failure)))
 
         (testAssumtionFailure [failure]
           (swap! results update-in [:failures] inc)
@@ -100,10 +108,9 @@
             t1 (System/currentTimeMillis)
             loader (or (get @loaders (:classloader-id msg))
                        (WebSocketClassLoader. url))
-            test-class (.loadClass loader (:name msg) true)
-            test-classes (into-array Class [test-class])]
+            test-class (.loadClass loader (:name msg) true)]
         (.setContextClassLoader (Thread/currentThread) loader)
-        (.run (junit-core results) test-classes)
+        (.run (junit-core results) (into-array Class [test-class]))
         (swap! loaders assoc (:classloader-id msg) loader))
       (catch Exception ex
         (.printStackTrace ex)

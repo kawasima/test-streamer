@@ -5,3 +5,6 @@ pom.xml
 *.gz
 *.jar
 *.log
+client/.idea
+*.iml
+

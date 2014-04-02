@@ -20,7 +20,9 @@
 (defonce available-clients (atom nil))
 
 
-(defn find-stand-by []
+(defn find-stand-by
+  "Find a stand-by client."
+  []
   (some (fn [[ch opts]]
           (when (= (:status opts) :stand-by)
             ch))
@@ -42,7 +44,8 @@
               (when-not (deref @available-clients 3000 false)
                 (info "No available clients.")) 
               (recur (find-stand-by)))))))
-    (catch Exception ex (.printStackTrace ex))))
+    (catch Exception ex (.printStackTrace ex))
+    (finally (info "Stop dispatcher."))))
 
 (defmulti handle :command)
 

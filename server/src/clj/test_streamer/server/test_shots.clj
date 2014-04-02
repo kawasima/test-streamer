@@ -80,12 +80,14 @@
                             (when-let [tests (scan-tests (vectorize include) classpaths)]
                               {::tests tests ::classpaths classpaths})))
   :exists? false
-  :post! (fn [{classpaths ::classpaths tests ::tests {{shot-id :shotId} :params} :request req :request}]
-           (submit-tests
-             (or shot-id (java.util.UUID/randomUUID))
-             tests
-             :classpaths classpaths)
-           {::id shot-id})
+  :post! (fn [{classpaths ::classpaths tests ::tests {{shot-id :shotId} :params} :request}]
+           (let [shot-id (if shot-id
+                           (java.util.UUID/fromString shot-id)
+                           (java.util.UUID/randomUUID))]
+             (submit-tests shot-id tests
+               :classpaths classpaths)
+             {::id shot-id}))
+           
   :post-redirect? (fn [ctx]
                     (case (get-in ctx [:representation :media-type])
                       ("text/html" "application/xhtml+xml")

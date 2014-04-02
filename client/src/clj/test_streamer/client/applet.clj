@@ -1,12 +1,18 @@
 (ns test-streamer.client.applet
   (:import
-    (javax.swing JApplet JPanel JLabel JFrame))
+    (java.awt Graphics Color Font RenderingHints)
+    (javax.swing JApplet JButton))
   (:gen-class
-    :post-init post-init
     :extends javax.swing.JApplet))
  
-(defn -post-init [this]
-  (def jpanel (JPanel.))
-  (.add jpanel (JLabel. "This is my first applet"))
-  (.setContentPane this jpanel))
+(defn -paint [#^JApplet applet #^Graphics g]
+  (let [width (.getWidth applet)
+        height (.getHeight applet)]
+    (doto g
+      (.setColor (. Color YELLOW))
+      (.fillRect 0 0 width height)
+      (.setColor (. Color BLACK))
+      (.drawRect 0 0 (dec width) (dec height))
+      (.setFont (Font. "Serif" (. Font PLAIN) 24))
+      (.drawString "Hello World!" 20 40))))
 
