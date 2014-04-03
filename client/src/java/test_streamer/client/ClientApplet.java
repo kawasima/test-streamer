@@ -30,16 +30,10 @@ public class ClientApplet extends JApplet {
         ClientConfig config = new ClientConfig();
         PanelNotification panelNotification = new PanelNotification();
         config.setObject(UI, panelNotification);
-        main = new Main(config);
-    }
-
-    @Override
-    public void paint(Graphics g) {
-        g.drawString("TestStreamer", 10, 10);
-
-        PanelNotification panelNotification = (PanelNotification)
-        add(panelNotification);
+        getContentPane().add(panelNotification);
         panelNotification.setVisible(true);
+
+        main = new Main(config);
 
         Main main = new Main(config);
         main.start("ws://localhost:5000/join");

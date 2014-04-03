@@ -113,10 +113,12 @@ public class Main {
         }
 
         config.setString(SERVER_HOST, URI.create(testServerUrl).getHost());
-        final WebSocket websocket = connect(testServerUrl);
+        connect(testServerUrl);
+        final Main self = this;
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void start() {
+                self.destroy();
             }
         });
 
@@ -127,7 +129,6 @@ public class Main {
         if (client != null && !client.isClosed())
             client.close();
         handlerLookup.dispose();
-        ClientConfig.getObject(UI);
     }
 
 

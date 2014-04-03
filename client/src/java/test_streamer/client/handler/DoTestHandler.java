@@ -11,7 +11,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static test_streamer.client.ClientConfig.ClientConfigKey.UI;
+import static test_streamer.client.ClientConfig.ClientConfigKey.*;
 
 /**
  * @author kawasima
@@ -28,12 +28,12 @@ public class DoTestHandler implements Handler {
     public void handle(Map<Keyword, Object> msg, WebSocket websocket) {
         String className = msg.get(Keyword.newKeyword("name")).toString();
 
-        ((ClientUI)config.getObject(UI)).running(className);
+        ((ClientUI)config.getObject(UI)).beginTest(className);
 
         ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         UUID classLoaderId = (UUID) msg.get(Keyword.newKeyword("classloader-id"));
         String url = new StringBuilder(256)
-                .append(config.getString(ClientConfig.ClientConfigKey.CLASS_PROVIDER_URL))
+                .append(config.getString(CLASS_PROVIDER_URL))
                 .append("?classLoaderId=")
                 .append(classLoaderId).toString();
 
@@ -55,9 +55,12 @@ public class DoTestHandler implements Handler {
         } finally {
             Thread.currentThread().setContextClassLoader(originalClassLoader);
         }
+        ((ClientUI)config.getObject(UI)).endTest(runListener.getResult());
+
         ResultCommand command = new ResultCommand(className, (UUID) msg.get(Keyword.newKeyword("shot-id")));
         command.setResult(runListener.getResult());
         WebSocketUtil.send(websocket, command);
+
         ((ClientUI)config.getObject(UI)).standby();
     }
 

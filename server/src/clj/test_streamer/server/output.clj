@@ -22,6 +22,7 @@
                 [:skipped])])])]))
 
 (defn jnlp [req]
+  (println req)
   (let [localhost (InetAddress/getLocalHost)]
     {:status 200
      :headers {"Content-Type" "application/x-java-jnlp-file"}

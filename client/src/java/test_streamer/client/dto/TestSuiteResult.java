@@ -81,4 +81,19 @@ public class TestSuiteResult {
     public void setClientException(String clientException) {
         this.clientException = clientException;
     }
+
+    public String toString() {
+        return new StringBuilder(256)
+                .append(name)
+                .append(" (tests: ")
+                .append(tests)
+                .append(", failures: ")
+                .append(failures)
+                .append(", errors: ")
+                .append(errors)
+                .append(") ")
+                .append(time)
+                .append(" sec")
+                .toString();
+    }
 }

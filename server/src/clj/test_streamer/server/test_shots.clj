@@ -10,7 +10,7 @@
 (defonce entries (atom {}))
 (defonce class-provider (ClassProvider.))
 
-(def shots-queue (permanent-channel))
+(defonce shots-queue (permanent-channel))
 
 (defn progress
   "Calculate a progress rate for a test shot."
@@ -94,7 +94,7 @@
              (submit-tests shot-id tests
                :classpaths classpaths)
              {::id shot-id}))
-           
+
   :post-redirect? (fn [ctx]
                     (case (get-in ctx [:representation :media-type])
                       ("text/html" "application/xhtml+xml")

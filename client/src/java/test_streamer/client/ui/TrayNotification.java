@@ -1,6 +1,7 @@
 package test_streamer.client.ui;
 
 import test_streamer.client.ClientUI;
+import test_streamer.client.dto.TestSuiteResult;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
@@ -50,9 +51,13 @@ public class TrayNotification implements ClientUI {
     }
 
     @Override
-    public void running(String testName) {
+    public void beginTest(String testName) {
         icon.setImage(IMG_RUNNING);
         icon.displayMessage("TestStreamer", "Executing test " + testName, TrayIcon.MessageType.INFO);
+    }
+
+    @Override
+    public void endTest(TestSuiteResult result) {
     }
 
     @Override
