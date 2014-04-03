@@ -128,6 +128,6 @@
       [:a {:href "https://www.java.com/en/download/help/jcp_security.xml"} "this."]]
     
     [:hr]
-    [:applet {:archive "client.jar" :code "test_streamer.client.ClientApplet"
+    [:applet {:archive "client.jar" :code "test_streamer.client.ClientApplet.class"
                :width "400" :height "250"}
       [:param {:name "permissions" :value "all-permissions"}]]))

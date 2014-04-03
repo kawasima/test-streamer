@@ -1,7 +1,8 @@
 .lein-*
 .nrepl-*
 target
-pom.xml
+server/pom.xml
+examples/*/pom.xml
 *.gz
 *.jar
 *.log

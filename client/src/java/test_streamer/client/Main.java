@@ -117,17 +117,20 @@ public class Main {
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void start() {
-                isTerminate = true;
-                if (websocket != null && websocket.isOpen())
-                    websocket.close();
-                if (client != null && !client.isClosed())
-                    client.close();
-                handlerLookup.dispose();
-
             }
         });
 
     }
+
+    public void destroy() {
+        isTerminate = true;
+        if (client != null && !client.isClosed())
+            client.close();
+        handlerLookup.dispose();
+        ClientConfig.getObject(UI);
+    }
+
+
 
     public static void main(String[] args) {
         Main main = new Main();

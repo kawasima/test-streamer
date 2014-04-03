@@ -12,20 +12,26 @@
 
 (def shots-queue (permanent-channel))
 
-(defn progress [shot-id]
+(defn progress
+  "Calculate a progress rate for a test shot."
+  [shot-id]
   (let [shot (get @entries shot-id)
         prog (- 100 (float (/ (* 100 (count (filter nil? (vals (:results shot)))))
                              (count (vals (:results shot))))))]
     (swap! entries assoc-in [shot-id :progress] prog)
     prog))
 
-(defn- vectorize [v]
+(defn- vectorize
+  "Convert a given value to a vector."
+  [v]
   (cond
     (coll? v) (vec v)
     (empty? v) nil
     :default [v]))
 
-(defn- file-to-class [path]
+(defn- file-to-class
+  "Convert a file path to the canonical name of a class."
+  [path]
   (.replace
     (.replaceAll (str path) "\\.class$" "")
     (.getSeparator (FileSystems/getDefault)) "."))
@@ -70,6 +76,7 @@
                                     :classloader-id classloader-id})))
     shot-id))
 
+;; The resource of test shots.
 (defresource list-test-shots
   :allowed-methods [:get :post]
   :available-media-types ["application/json" "text/html"]
@@ -94,6 +101,7 @@
                       {:location (str "/test-shots/" (get ctx ::id))}
                       false)))
 
+;; The resource of single test shot.
 (defresource entry-test-shot [id]
   :allowed-methods [:get :delete]
   :delete! (fn [ctx]
