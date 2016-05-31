@@ -1,17 +1,20 @@
 package test_streamer.client.handler;
 
-import com.ning.http.client.websocket.WebSocket;
 import net.unit8.wscl.WebSocketClassLoader;
 import org.junit.runner.JUnitCore;
 import test_streamer.client.*;
 import test_streamer.client.dto.ResultCommand;
 import us.bpsm.edn.Keyword;
 
+import javax.websocket.DeploymentException;
+import javax.websocket.Session;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-import static test_streamer.client.ClientConfig.ClientConfigKey.*;
+import static test_streamer.client.ClientConfig.ClientConfigKey.CLASS_PROVIDER_URL;
+import static test_streamer.client.ClientConfig.ClientConfigKey.UI;
 
 /**
  * @author kawasima
@@ -25,7 +28,7 @@ public class DoTestHandler implements Handler {
     }
 
     @Override
-    public void handle(Map<Keyword, Object> msg, WebSocket websocket) {
+    public void handle(Map<Keyword, Object> msg, Session session) {
         String className = msg.get(Keyword.newKeyword("name")).toString();
 
         ((ClientUI)config.getObject(UI)).beginTest(className);
@@ -39,7 +42,11 @@ public class DoTestHandler implements Handler {
 
         ClassLoader loader = classLoaderCache.get(classLoaderId);
         if (loader == null) {
-            loader = new WebSocketClassLoader(url);
+            try {
+                loader = new WebSocketClassLoader(url);
+            } catch (IOException | DeploymentException e) {
+                throw new IllegalStateException(e);
+            }
         }
 
         ClientRunListener runListener = new ClientRunListener(className);
@@ -59,7 +66,7 @@ public class DoTestHandler implements Handler {
 
         ResultCommand command = new ResultCommand(className, (UUID) msg.get(Keyword.newKeyword("shot-id")));
         command.setResult(runListener.getResult());
-        WebSocketUtil.send(websocket, command);
+        WebSocketUtil.send(session, command);
 
         ((ClientUI)config.getObject(UI)).standby();
     }
@@ -67,7 +74,11 @@ public class DoTestHandler implements Handler {
     public void dispose() {
         for (Map.Entry<UUID, ClassLoader> entry : classLoaderCache.entrySet()) {
             if (entry.getValue() instanceof WebSocketClassLoader) {
-                ((WebSocketClassLoader) entry.getValue()).dispose();
+                try {
+                    ((WebSocketClassLoader) entry.getValue()).dispose();
+                } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
             }
         }
     }

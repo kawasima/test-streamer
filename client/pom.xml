@@ -7,8 +7,8 @@
   <name>test-streamer-client</name>
   <description/>
   <build>
-    <sourceDirectory>src/java</sourceDirectory>
-    <testSourceDirectory>test/java</testSourceDirectory>
+    <sourceDirectory>src/clj</sourceDirectory>
+    <testSourceDirectory>test</testSourceDirectory>
     <resources>
       <resource>
         <directory>resources</directory>
@@ -16,59 +16,46 @@
     </resources>
     <testResources>
       <testResource>
-        <directory>dev-resources</directory>
-      </testResource>
-      <testResource>
         <directory>resources</directory>
       </testResource>
     </testResources>
     <directory>target</directory>
     <outputDirectory>target/classes</outputDirectory>
-
-      <plugins>
-          <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-shade-plugin</artifactId>
-              <version>2.0</version>
-              <executions>
-                  <execution>
-                      <phase>package</phase>
-                      <goals><goal>shade</goal></goals>
-                      <configuration>
-                          <minimizeJar>false</minimizeJar>
-                          <outputFile>../server/client.jar</outputFile>
-                          <transformers>
-                              <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                  <manifestEntries>
-                                      <Permissions>all-permissions</Permissions>
-                                      <Codebase>*</Codebase>
-                                  </manifestEntries>
-                              </transformer>
-                          </transformers>
-                      </configuration>
-                  </execution>
-              </executions>
-          </plugin>
-          <plugin>
-              <groupId>org.apache.maven.plugins</groupId>
-              <artifactId>maven-jarsigner-plugin</artifactId>
-              <executions>
-                  <execution>
-                      <phase>package</phase>
-                      <goals><goal>sign</goal></goals>
-                      <configuration>
-                          <alias>test-streamer</alias>
-                          <archive>../server/client.jar</archive>
-                      </configuration>
-                  </execution>
-              </executions>
-          </plugin>
-      </plugins>
+    <plugins>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.3</version>
+        <configuration>
+          <source>1.8</source>
+          <target>1.8</target>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.7</version>
+        <executions>
+          <execution>
+            <id>add-source</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>add-source</goal>
+            </goals>
+            <configuration>
+              <sources>
+                <source>src/java</source>
+              </sources>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+    </plugins>
   </build>
   <repositories>
     <repository>
       <id>central</id>
-      <url>http://repo1.maven.org/maven2/</url>
+      <url>https://repo1.maven.org/maven2/</url>
       <snapshots>
         <enabled>false</enabled>
       </snapshots>
@@ -76,22 +63,47 @@
         <enabled>true</enabled>
       </releases>
     </repository>
+    <repository>
+      <id>clojars</id>
+      <url>https://clojars.org/repo/</url>
+      <snapshots>
+        <enabled>true</enabled>
+      </snapshots>
+      <releases>
+        <enabled>true</enabled>
+      </releases>
+    </repository>
   </repositories>
   <dependencies>
-      <dependency>
-          <groupId>us.bpsm</groupId>
-          <artifactId>edn-java</artifactId>
-          <version>0.4.4</version>
-      </dependency>
-      <dependency>
+    <dependency>
+      <groupId>org.clojure</groupId>
+      <artifactId>clojure</artifactId>
+      <version>1.7.0</version>
+    </dependency>
+    <dependency>
       <groupId>net.unit8.wscl</groupId>
       <artifactId>websocket-classloader</artifactId>
-      <version>0.1.2-SNAPSHOT</version>
+      <version>0.2.1</version>
+    </dependency>
+    <dependency>
+      <groupId>io.undertow</groupId>
+      <artifactId>undertow-websockets-jsr</artifactId>
+      <version>1.1.1.Final</version>
+    </dependency>
+    <dependency>
+      <groupId>org.slf4j</groupId>
+      <artifactId>slf4j-simple</artifactId>
+      <version>1.7.21</version>
+    </dependency>
+    <dependency>
+      <groupId>us.bpsm</groupId>
+      <artifactId>edn-java</artifactId>
+      <version>0.4.6</version>
     </dependency>
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
-      <version>4.11</version>
+      <version>4.12</version>
     </dependency>
   </dependencies>
 </project>

@@ -1,37 +1,48 @@
 package test_streamer.client;
 
-import com.ning.http.client.AsyncHttpClient;
-import com.ning.http.client.websocket.WebSocket;
-import com.ning.http.client.websocket.WebSocketTextListener;
-import com.ning.http.client.websocket.WebSocketUpgradeHandler;
+import javafx.application.Application;
+import javafx.application.Platform;
+import javafx.scene.Scene;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.StackPane;
+import javafx.stage.Stage;
+import test_streamer.client.dto.ReadyCommand;
 import test_streamer.client.handler.ClassProviderPortHandler;
 import test_streamer.client.handler.DoTestHandler;
+import test_streamer.client.ui.PanelNotification;
 import test_streamer.client.ui.TrayNotification;
 import us.bpsm.edn.Keyword;
 import us.bpsm.edn.parser.Parseable;
 import us.bpsm.edn.parser.Parser;
 import us.bpsm.edn.parser.Parsers;
 
+import javax.websocket.*;
+import java.awt.*;
+import java.io.IOException;
 import java.net.URI;
 import java.security.*;
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
+import static test_streamer.client.ClientConfig.ClientConfigKey.CLASS_PROVIDER_URL;
 import static test_streamer.client.ClientConfig.ClientConfigKey.SERVER_HOST;
 import static test_streamer.client.ClientConfig.ClientConfigKey.UI;
+
 /**
+ * Starts a client application.
+ *
  * @author kawasima
  */
-public class Main {
-    private AsyncHttpClient client;
+public class Main extends Application {
+    private Session session;
     private Parser ednParser = Parsers.newParser(Parsers.defaultConfiguration());
     private final HandlerLookup handlerLookup = new HandlerLookup();
     private ClientUI ui;
     private ClientConfig config;
     private boolean isTerminate = false;
 
-    public Main(ClientConfig config) {
-        this.config = config;
+    @Override
+    public void init() {
+        this.config = new ClientConfig();
         handlerLookup.registerHandler(
                 Keyword.newKeyword("do-test"),
                 new DoTestHandler(config));
@@ -39,103 +50,75 @@ public class Main {
                 Keyword.newKeyword("class-provider-port"),
                 new ClassProviderPortHandler(config));
     }
-    public Main() {
-        this(new ClientConfig());
-    }
 
-    public WebSocket connect(final String testServerUrl) {
-        client = new AsyncHttpClient();
-        WebSocket websocket;
-        while(true) {
-            try {
-                websocket = client.prepareGet(testServerUrl)
-                        .execute(new WebSocketUpgradeHandler.Builder().addWebSocketListener(
-                                new WebSocketTextListener() {
-                                    private WebSocket connection;
-                                    @Override
-                                    public void onMessage(String message) {
-                                        Parseable psb = Parsers.newParseable(new String(message));
-                                        Map<Keyword, Object> command = (Map)ednParser.nextValue (psb);
-                                        Handler handler = handlerLookup.getHandler((Keyword)command.get(Keyword.newKeyword("command")));
-                                        handler.handle(command, connection);
-                                    }
-
-                                    @Override
-                                    public void onFragment(String fragment, boolean last) {
-                                        throw new UnsupportedOperationException("onFragment");
-                                    }
-
-                                    @Override
-                                    public void onOpen(WebSocket websocket) {
-                                        connection = websocket;
-                                        ui.standby();
-                                        WebSocketUtil.send(websocket, "{:command :class-provider-port}");
-                                    }
-
-                                    @Override
-                                    public void onClose(WebSocket websocket) {
-                                        if (websocket.isOpen()) {
-                                            websocket.close();
-
-                                        }
-                                        ui.disconnect();
-                                        connection = null;
-
-                                        if (!isTerminate)
-                                            connect(testServerUrl);
-                                    }
-
-                                    @Override
-                                    public void onError(Throwable t) {
-                                        t.printStackTrace();
-                                    }
-                                }
-                        ).build()).get(5000, TimeUnit.MILLISECONDS);
-                break;
-            } catch(Exception ex) {
-                try {
-                    Thread.sleep(5000);
-                } catch(InterruptedException ignore) {}
+    public Session connect(final String testServerUrl) throws IOException, DeploymentException {
+        URI uri = URI.create(testServerUrl);
+        WebSocketContainer wsContainer = ContainerProvider.getWebSocketContainer();
+        ClientEndpointConfig cec = ClientEndpointConfig.Builder.create().build();
+        session = wsContainer.connectToServer(new Endpoint() {
+            @Override
+            public void onOpen(final Session session, EndpointConfig endpointConfig) {
+                session.addMessageHandler(String.class, message -> {
+                    Parseable psb = Parsers.newParseable(new String(message));
+                    Map<Keyword, Object> command = (Map)ednParser.nextValue (psb);
+                    Handler handler = handlerLookup.getHandler((Keyword)command.get(Keyword.newKeyword("command")));
+                    handler.handle(command, session);
+                });
+                ui.standby();
+                String serverHost = config.getString(SERVER_HOST);
+                config.setObject(CLASS_PROVIDER_URL,
+                        "ws://" + serverHost + "/wscl");
+                WebSocketUtil.send(session, new ReadyCommand());
             }
-        }
-        return websocket;
+        }, cec, uri);
+
+        return session;
     }
 
-    public void start(String testServerUrl) {
+    public void start(Stage stage, String testServerUrl) throws IOException, DeploymentException {
         try {
             ui = (ClientUI) config.getObject(UI);
             if (ui == null) {
-                ui = new TrayNotification();
+                if (SystemTray.isSupported()) {
+                    ui = new TrayNotification();
+                } else {
+                    ui = new PanelNotification();
+                    StackPane layout = new StackPane((AnchorPane) ui);
+                    Scene scene = new Scene(layout);
+                    stage.setScene(scene);
+                }
                 config.setObject(UI, ui);
             }
         } catch (Exception ex) {
-            throw new IllegalArgumentException();
+            throw new IllegalArgumentException(ex);
         }
 
-        config.setString(SERVER_HOST, URI.create(testServerUrl).getHost());
+        URI serverUri = URI.create(testServerUrl);
+        config.setString(SERVER_HOST, serverUri.getHost() + ":" + serverUri.getPort());
         connect(testServerUrl);
         final Main self = this;
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void start() {
-                self.destroy();
+                try {
+                    self.destroy();
+                } catch (IOException e) {
+                    throw new IllegalStateException(e);
+                }
             }
         });
 
     }
 
-    public void destroy() {
+    public void destroy() throws IOException {
         isTerminate = true;
-        if (client != null && !client.isClosed())
-            client.close();
+        if (session != null && session.isOpen())
+            session.close();
         handlerLookup.dispose();
     }
 
-
-
-    public static void main(String[] args) {
-        Main main = new Main();
-        System.setSecurityManager(null);
+    @Override
+    public void start(Stage stage) throws Exception {
         Policy.setPolicy(new Policy() {
             @Override
             public PermissionCollection getPermissions(CodeSource codesource) {
@@ -144,6 +127,12 @@ public class Main {
                 return p;
             }
         });
-        main.start("ws://localhost:5000/join");
+        Platform.setImplicitExit(false);
+        start(stage, "ws://localhost:5000/join");
+        stage.show();
+    }
+
+    public static void main(String[] args) throws IOException, DeploymentException {
+        launch(args);
     }
 }

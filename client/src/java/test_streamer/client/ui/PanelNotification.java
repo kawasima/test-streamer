@@ -1,43 +1,44 @@
 package test_streamer.client.ui;
 
+import javafx.scene.control.Label;
+import javafx.scene.control.TextArea;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.VBox;
 import test_streamer.client.ClientUI;
 import test_streamer.client.dto.TestSuiteResult;
-
-import javax.swing.*;
-import java.awt.*;
 
 /**
  * @author kawasima
  */
-public class PanelNotification extends JPanel implements ClientUI {
-    private StatusBar statusBar;
-    private MessageArea messageArea;
+public class PanelNotification extends AnchorPane implements ClientUI {
+    private Label statusBar;
+    private TextArea messageArea;
+    private VBox vBox = new VBox();
+
     public PanelNotification() {
-        setLayout(new BorderLayout());
-        statusBar = new StatusBar("Connecting...");
-        messageArea = new MessageArea();
-        add(statusBar, BorderLayout.NORTH);
-        add(new JScrollPane(messageArea), BorderLayout.CENTER);
+        statusBar = new Label("Connecting...");
+        messageArea = new TextArea();
+        messageArea.setDisable(true);
+        vBox.getChildren().addAll(statusBar, messageArea);
+        getChildren().addAll(vBox);
     }
 
-    @Override
     public void beginTest(String testName) {
-        messageArea.append("Running tests: " + testName + "\n");
+        messageArea.appendText("Running tests: " + testName + "\n");
     }
 
-    @Override
     public void endTest(TestSuiteResult result) {
-        messageArea.append(result.toString() + "\n");
+        messageArea.appendText(result.toString() + "\n");
     }
 
-    @Override
     public void disconnect() {
-        messageArea.append("Disconnect from server." + "\n");
-        statusBar.setText("Disconnected", Color.RED);
+        messageArea.appendText("Disconnect from server." + "\n");
+        statusBar.setText("Disconnected");
+        statusBar.setStyle("-fx-text-fill: #ff0000;");
     }
 
-    @Override
     public void standby() {
-        statusBar.setText("Connected", Color.GREEN);
+        statusBar.setText("Connected");
+        statusBar.setStyle("-fx-text-fill: #00ff00;");
     }
 }

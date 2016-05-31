@@ -9,7 +9,7 @@ public class ClientConfig {
     private HashMap<ClientConfigKey, Object> config = new HashMap<ClientConfigKey, Object>();
 
     public ClientConfig() {
-        config.put(ClientConfigKey.UI, "test_streamer.client.ui.TrayNotification");
+        //config.put(ClientConfigKey.UI, "test_streamer.client.ui.TrayNotification");
     }
 
     public String getString(ClientConfigKey key) {

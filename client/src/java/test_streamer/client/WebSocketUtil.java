@@ -1,19 +1,19 @@
 package test_streamer.client;
 
-import com.ning.http.client.websocket.WebSocket;
 import us.bpsm.edn.printer.Printer;
 import us.bpsm.edn.printer.Printers;
 import us.bpsm.edn.protocols.Protocol;
 
+import javax.websocket.Session;
 import java.io.StringWriter;
 
 /**
  * @author kawasima
  */
 public class WebSocketUtil {
-    public static void send(WebSocket websocket, Object msg) {
+    public static void send(Session session, Object msg) {
         if(msg instanceof String) {
-            websocket.sendTextMessage((String)msg);
+            session.getAsyncRemote().sendText((String) msg);
         } else {
             final Protocol<Printer.Fn<?>> protocol = Printers
                     .prettyProtocolBuilder()
@@ -23,8 +23,7 @@ public class WebSocketUtil {
             Printers.newPrinter(protocol, sw)
                     .printValue(msg);
             sw.flush();
-            send(websocket, sw.toString());
-
+            send(session, sw.toString());
         }
     }
 }

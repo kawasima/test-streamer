@@ -2,15 +2,13 @@
   (:require [test-streamer.server.page :as page]
             [test-streamer.server.output :as output])
   (:use [liberator.core :only [defresource]]
-        [lamina.core]
-        [clojure.tools.logging :only [info debug]])
-  (:import [net.unit8.wscl ClassProvider]
+        [clojure.tools.logging :only [info debug]]
+        [clojure.core.async :only [go chan put!]])
+  (:import [net.unit8.wscl ClassLoaderHolder]
            [java.nio.file FileSystems Paths Files SimpleFileVisitor FileVisitResult LinkOption]))
 
 (defonce entries (atom {}))
-(defonce class-provider (ClassProvider.))
-
-(defonce shots-queue (permanent-channel))
+(defonce shots-queue (chan))
 
 (defn progress
   "Calculate a progress rate for a test shot."
@@ -61,8 +59,10 @@
              flatten)))
 
 (defn submit-tests [shot-id tests & {classpaths :classpaths}]
-  (let [classloader-id (and classpaths (.registerClasspath class-provider
-                                         (into-array java.net.URL classpaths)))]
+  (let [classloader-id (and classpaths (.registerClasspath
+                                        (ClassLoaderHolder/getInstance)
+                                        (into-array java.net.URL classpaths)
+                                        (.. (Thread/currentThread) getContextClassLoader)))]
     (swap! entries assoc (.toString shot-id)
       {:id shot-id
        :submitted-at (java.util.Date.)
@@ -71,10 +71,17 @@
        :classloader-id  classloader-id
        :results (apply hash-map (interleave tests (repeat nil)))})
     (doseq [test tests]
-      (enqueue shots-queue (pr-str {:shot-id shot-id
-                                    :name test
-                                    :classloader-id classloader-id})))
+      (put! shots-queue {:shot-id shot-id
+                         :name test
+                         :classloader-id classloader-id}))
     shot-id))
+
+(defn- classpath [loader]
+  (distinct
+   (mapcat #(seq (.getURLs %))
+           (take-while identity
+                       (iterate
+                        #(.getParent ^ClassLoader %) loader)))))
 
 ;; The resource of test shots.
 (defresource list-test-shots
@@ -83,7 +90,7 @@
   :can-post-to-missing? (fn [{{{:strs [include cp]} :form-params} :request}]
                           (let [classpaths (if (vectorize cp)
                                              (map #(java.net.URL. %) cp)
-                                             (.. (Thread/currentThread) getContextClassLoader getURLs))]
+                                             (classpath (clojure.lang.RT/baseLoader)))]
                             (when-let [tests (scan-tests (vectorize include) classpaths)]
                               {::tests tests ::classpaths classpaths})))
   :exists? false
@@ -92,14 +99,15 @@
                            (java.util.UUID/fromString shot-id)
                            (java.util.UUID/randomUUID))]
              (submit-tests shot-id tests
-               :classpaths classpaths)
+                           :classpaths classpaths)
              {::id shot-id}))
 
   :post-redirect? (fn [ctx]
                     (case (get-in ctx [:representation :media-type])
                       ("text/html" "application/xhtml+xml")
                       {:location (str "/test-shots/" (get ctx ::id))}
-                      false)))
+                      false))
+  :handle-ok "ok")
 
 ;; The resource of single test shot.
 (defresource entry-test-shot [id]

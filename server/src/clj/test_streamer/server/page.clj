@@ -1,5 +1,6 @@
 (ns test-streamer.server.page
-  (:use [hiccup core page element]))
+  (:use [hiccup core page element])
+  (:require [ring.util.anti-forgery :refer [anti-forgery-field]]))
 
 (defmacro layout [{headers :headers} & body]
   `(html5
@@ -62,6 +63,7 @@
 
     [:h2.content-subhead "Submit tests"]
     [:form.pure-form {:method "post" :action "/test-shots"}
+     (anti-forgery-field)
       [:fieldset
         [:input.pure-input-2-3 {:type "text" :name "include"}]
         [:button.pure-button.pure-button-primary {:type "submit"} "execute"]]]))
