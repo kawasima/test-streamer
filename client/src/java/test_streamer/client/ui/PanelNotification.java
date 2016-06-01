@@ -4,6 +4,7 @@ import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.VBox;
+import test_streamer.client.ClientStatus;
 import test_streamer.client.ClientUI;
 import test_streamer.client.dto.TestSuiteResult;
 
@@ -11,16 +12,17 @@ import test_streamer.client.dto.TestSuiteResult;
  * @author kawasima
  */
 public class PanelNotification extends AnchorPane implements ClientUI {
-    private Label statusBar;
+    private StatusBar statusBar;
     private TextArea messageArea;
     private VBox vBox = new VBox();
 
     public PanelNotification() {
-        statusBar = new Label("Connecting...");
         messageArea = new TextArea();
-        messageArea.setDisable(true);
+        messageArea.setEditable(false);
+        statusBar = new StatusBar(ClientStatus.CONNECTING);
         vBox.getChildren().addAll(statusBar, messageArea);
         getChildren().addAll(vBox);
+
     }
 
     public void beginTest(String testName) {
@@ -33,12 +35,10 @@ public class PanelNotification extends AnchorPane implements ClientUI {
 
     public void disconnect() {
         messageArea.appendText("Disconnect from server." + "\n");
-        statusBar.setText("Disconnected");
-        statusBar.setStyle("-fx-text-fill: #ff0000;");
+        statusBar.setStatus(ClientStatus.DISCONNECTED);
     }
 
     public void standby() {
-        statusBar.setText("Connected");
-        statusBar.setStyle("-fx-text-fill: #00ff00;");
+        statusBar.setStatus(ClientStatus.CONNECTED);
     }
 }

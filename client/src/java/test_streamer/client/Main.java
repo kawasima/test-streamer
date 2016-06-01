@@ -2,11 +2,13 @@ package test_streamer.client;
 
 import javafx.application.Application;
 import javafx.application.Platform;
+import javafx.event.EventType;
 import javafx.scene.Scene;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import test_streamer.client.dto.ReadyCommand;
+import test_streamer.client.event.ConnectEvent;
 import test_streamer.client.handler.ClassProviderPortHandler;
 import test_streamer.client.handler.DoTestHandler;
 import test_streamer.client.ui.PanelNotification;
@@ -23,9 +25,7 @@ import java.net.URI;
 import java.security.*;
 import java.util.Map;
 
-import static test_streamer.client.ClientConfig.ClientConfigKey.CLASS_PROVIDER_URL;
-import static test_streamer.client.ClientConfig.ClientConfigKey.SERVER_HOST;
-import static test_streamer.client.ClientConfig.ClientConfigKey.UI;
+import static test_streamer.client.ClientConfig.ClientConfigKey.*;
 
 /**
  * Starts a client application.
@@ -70,6 +70,12 @@ public class Main extends Application {
                         "ws://" + serverHost + "/wscl");
                 WebSocketUtil.send(session, new ReadyCommand());
             }
+
+            @Override
+            public void onClose(final Session session, CloseReason closeReason) {
+                ClientUI ui = (ClientUI) config.getObject(UI);
+                Platform.runLater(ui::disconnect);
+            }
         }, cec, uri);
 
         return session;
@@ -95,7 +101,15 @@ public class Main extends Application {
 
         URI serverUri = URI.create(testServerUrl);
         config.setString(SERVER_HOST, serverUri.getHost() + ":" + serverUri.getPort());
-        connect(testServerUrl);
+        ((AnchorPane) ui).addEventHandler(ConnectEvent.CONNECT_SERVER, e -> {
+            try {
+                connect(testServerUrl);
+            } catch (Exception ex) {
+                ui.disconnect();
+            }
+        });
+        ((AnchorPane) ui).fireEvent(new ConnectEvent());
+
         final Main self = this;
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override

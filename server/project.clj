@@ -5,7 +5,7 @@
                  [junit/junit "4.12"]
                  [org.clojure/tools.logging "0.3.1"]
                  [org.slf4j/slf4j-simple "1.7.21"]
-                 
+                 [com.stuartsierra/component "0.3.1"]
                  [io.undertow/undertow-websockets-jsr "1.1.1.Final"]
                  [ring "1.4.0" :exclusions [org.clojure/tools.reader]]
                  [ring/ring-defaults "0.2.0"]
