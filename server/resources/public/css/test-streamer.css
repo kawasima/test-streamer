@@ -2,12 +2,12 @@
     padding: 1em 2em;
     max-width: 768px;
 }
+
 h2 {
     margin: 1em 0 0.5em 0;
     font-weight: 600;
     font-family: 'Titillium Web', sans-serif;
     position: relative;
-    text-shadow: 0 -1px 1px rgba(0,0,0,0.4);
     font-size: 22px;
     line-height: 40px;
     color: #355681;
@@ -16,8 +16,7 @@ h2 {
 }
 
 .header {
-    background-image: url(header-bg.png);
-    background-repeat: repeat;
+    background-color: #4d5aaf;
     border-bottom: 1px;
     border-color: #ccc;
     box-shadow: 0px 1px 3px #999;
@@ -30,7 +29,6 @@ h2 {
 
 .pure-menu a {
     color: #f0f0e0;
-    text-shadow: 2px 2px 1px #666, -2px 2px 1px #666, 2px -2px 1px #666, -2px -2px 1px #666;
 }
 
 .pure-menu li a:hover {
@@ -45,7 +43,6 @@ h2 {
     border-bottom-width: 1px;
     border-bottom-style: solid;
     border-bottom-color: #dfdfdf;
-    text-shadow: 2px 2px 1px #666, -2px 2px 1px #666, 2px -2px 1px #666, -2px -2px 1px #666;
     font-weight: bold;
 }
 

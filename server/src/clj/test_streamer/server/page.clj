@@ -13,7 +13,8 @@
      [:body
        [:div.header
          [:div.pure-menu.pure-menu-open.pure-menu-horizontal
-           [:a.pure-menu-heading {:href "/"} "Test Streamer"]
+          [:a.pure-menu-heading {:href "/"}
+           [:img {:src "/img/logo.png"}]]
            [:ul
              [:li [:a {:href "/client"} "client"]]]]]
        [:div#content.pure-g
@@ -115,21 +116,13 @@
       "test_streamer.core.setup_report()")))
 
 (defn client-page []
-  (layout {:headers [:script {:src "http://java.com/js/deployJava.js"
-                              :type "text/javascript"}]}
+  (layout
+   {:headers [:script {:src "http://java.com/js/deployJava.js"
+                       :type "text/javascript"}]}
    [:h2 "TestStreamer Client"]
    (javascript-tag
     "var url = \"/test-streamer-client.jnlp\";
-    deployJava.createWebStartLaunchButton (url, '1.6.0');")
+    deployJava.createWebStartLaunchButton (url, '1.7.0');")
    [:p "If you get a security warning, you select 'Medium' security level. Please refer to "
     [:a {:href "https://www.java.com/en/download/help/jcp_security.xml"} "this."]]
-
-   [:hr]
-   (javascript-tag
-    "var attributes = {codebase:'./',
-                       code: 'test_streamer.client.ClientApplet.class',
-                       archive: 'client.jar',
-                       permissions: 'all-permissions',
-                       width: 400, height: 250};
-     var parameters = {image: '/img/splash.png'}
-     deployJava.runApplet(attributes, parameters, '1.6.0')")))
+   [:p [:a {:href "/test-streamer-client.jnlp"} "Start"]]))

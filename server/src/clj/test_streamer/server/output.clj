@@ -28,7 +28,7 @@
      :headers {"Content-Type" "application/x-java-jnlp-file"}
      :body (html
             (xml-declaration "UTF-8")
-            [:jnlp {:spec "6.0+"
+            [:jnlp {:spec "8.0+"
                     :codebase (str "http://"
                                    (:server-name req) ":"
                                    (:server-port req))
@@ -43,7 +43,7 @@
               [:jar {:href (str "http://"
                                    (:server-name req) ":"
                                    (:server-port req) "/client.jar")}]]
-             [:application-desc {:main-class "test_streamer.client.core"}
+             [:application-desc {:main-class "test_streamer.client.Main"}
               [:argument (str "ws://" (:server-name req) ":"
                               (:server-port req))]]])}))
 

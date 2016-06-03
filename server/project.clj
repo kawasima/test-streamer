@@ -1,4 +1,4 @@
-(defproject net.unit8/test-streamer-server "0.1.0-SNAPSHOT"
+(defproject net.unit8.teststreamer/test-streamer-server "0.1.0-SNAPSHOT"
   :dependencies [[org.clojure/clojure "1.8.0"]
                  [hiccup "1.0.5"]
                  [net.unit8.wscl/websocket-classloader "0.2.1"]
@@ -12,6 +12,8 @@
 
                  [compojure "1.5.0"]
                  [liberator "0.14.1"]
+                 [meta-merge "0.1.1"]
+                 [environ "1.0.3"]
                  [javax.servlet/servlet-api "2.5"]
                  [org.clojure/core.async "0.2.374"]
                  [org.clojure/clojurescript "1.8.51"]]

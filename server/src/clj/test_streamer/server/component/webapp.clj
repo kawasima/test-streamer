@@ -12,7 +12,8 @@
   (start [component]
     (assoc component :handler
            (-> (routes
-                (ANY "/test-shots" [] (get-in test-shots [:resources :list-test-shots]))
+                (ANY "/test-shots" [:as req]
+                  (get-in test-shots [:resources :list-test-shots]))
                 (ANY "/test-shots/:shot-id" [shot-id]
                   (let [entry-test-shot (get-in test-shots [:resources :entry-test-shot])]
                     (entry-test-shot shot-id)))
@@ -32,7 +33,8 @@
                                    :clients @(:clients dispatcher)))
                 (route/resources "/")
                 (route/not-found "Not Found"))
-               (wrap-defaults site-defaults))))
+               (wrap-defaults (-> site-defaults
+                                  (assoc-in [:security :anti-forgery] false))))))
 
   (stop [component]
     (dissoc component :handler)))
