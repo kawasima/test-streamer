@@ -23,6 +23,8 @@ import java.awt.*;
 import java.io.IOException;
 import java.net.URI;
 import java.security.*;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static test_streamer.client.ClientConfig.ClientConfigKey.*;
@@ -36,12 +38,13 @@ public class Main extends Application {
     private Session session;
     private Parser ednParser = Parsers.newParser(Parsers.defaultConfiguration());
     private final HandlerLookup handlerLookup = new HandlerLookup();
-    private ClientUI ui;
+    private List<ClientUI> uiList;
     private ClientConfig config;
     private boolean isTerminate = false;
 
     @Override
     public void init() {
+        uiList = new ArrayList<>();
         this.config = new ClientConfig();
         handlerLookup.registerHandler(
                 Keyword.newKeyword("do-test"),
@@ -64,7 +67,7 @@ public class Main extends Application {
                     Handler handler = handlerLookup.getHandler((Keyword)command.get(Keyword.newKeyword("command")));
                     handler.handle(command, session);
                 });
-                ui.standby();
+                uiList.forEach(ClientUI::standby);
                 String serverHost = config.getString(SERVER_HOST);
                 config.setObject(CLASS_PROVIDER_URL,
                         "ws://" + serverHost + "/wscl");
@@ -73,8 +76,7 @@ public class Main extends Application {
 
             @Override
             public void onClose(final Session session, CloseReason closeReason) {
-                ClientUI ui = (ClientUI) config.getObject(UI);
-                ui.disconnect();
+                uiList.forEach(ClientUI::disconnect);
             }
         }, cec, uri);
 
@@ -83,35 +85,42 @@ public class Main extends Application {
 
     public void start(Stage stage, String testServerUrl) throws IOException, DeploymentException {
         try {
-            ui = (ClientUI) config.getObject(UI);
-            if (ui == null) {
-                if (SystemTray.isSupported()) {
-                    ui = new TrayNotification();
-                } else {
-                    ui = new PanelNotification();
-                    Scene scene = new Scene((AnchorPane) ui);
-                    scene.getStylesheets().add("css/client.css");
-                    stage.setOnCloseRequest(event -> destroy());
-                    stage.setScene(scene);
-                }
-                config.setObject(UI, ui);
+            if (SystemTray.isSupported()) {
+                uiList.add(new TrayNotification());
             }
+            PanelNotification panelUi = new PanelNotification();
+            uiList.add(panelUi);
+            Scene scene = new Scene(panelUi);
+            scene.getStylesheets().add("css/client.css");
+            stage.setOnCloseRequest(event -> {
+                Platform.runLater(() -> destroy());
+                stage.close();
+            });
+            stage.setScene(scene);
         } catch (Exception ex) {
             throw new IllegalArgumentException(ex);
         }
 
         URI serverUri = URI.create(testServerUrl);
         config.setString(SERVER_HOST, serverUri.getHost() + ":" + serverUri.getPort());
-        ((AnchorPane) ui).addEventHandler(ConnectEvent.CONNECT_SERVER, e -> {
+        uiList.forEach(ui -> ui.addEventHandler(ConnectEvent.CONNECT_SERVER, e -> {
             try {
                 connect(testServerUrl);
             } catch (Exception ex) {
                 ui.disconnect();
             }
-        });
-        ((AnchorPane) ui).fireEvent(new ConnectEvent());
-
-        Runtime.getRuntime().addShutdownHook(new Thread(this::destroy));
+        }));
+        try {
+            connect(testServerUrl);
+        } catch (Exception ex) {
+            uiList.forEach(ClientUI::disconnect);
+        }
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            Platform.runLater(() -> {
+                destroy();
+                stage.close();
+            });
+        }));
     }
 
     public void destroy() {
@@ -124,6 +133,7 @@ public class Main extends Application {
             }
         }
         handlerLookup.dispose();
+
     }
 
     @Override
