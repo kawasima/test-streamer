@@ -14,5 +14,8 @@
 
 (defn -main [& args]
   (let [system (new-system config)]
+    (println "Starting HTTP server on port" (-> system :http :port))
+    (delay (.addShutdownHook (Runtime/getRuntime)
+                             (Thread. #(component/stop system))))
     (component/start system)))
 

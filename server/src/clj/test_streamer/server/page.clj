@@ -7,7 +7,7 @@
      [:head
        [:link {:rel "stylesheet" :href "/css/pure-min.css"}]
        [:link {:rel "stylesheet" :href "/css/test-streamer.css"}]
-       [:script {:src "/js/test-streamer.js"}]
+       [:script {:src "/js/test-streamer.min.js"}]
        ~headers]
 
      [:body
@@ -117,12 +117,5 @@
 
 (defn client-page []
   (layout
-   {:headers [:script {:src "http://java.com/js/deployJava.js"
-                       :type "text/javascript"}]}
    [:h2 "TestStreamer Client"]
-   (javascript-tag
-    "var url = \"/test-streamer-client.jnlp\";
-    deployJava.createWebStartLaunchButton (url, '1.7.0');")
-   [:p "If you get a security warning, you select 'Medium' security level. Please refer to "
-    [:a {:href "https://www.java.com/en/download/help/jcp_security.xml"} "this."]]
-   [:p [:a {:href "/test-streamer-client.jnlp"} "Start"]]))
+   [:p [:a {:href "/test-streamer-client.jnlp"} "Download client"]]))

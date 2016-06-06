@@ -19,26 +19,33 @@
                  [org.clojure/clojurescript "1.8.51"]]
 
   :source-paths ["src/clj"]
-  :plugins [[lein-cljsbuild "1.1.3"]]
+  :plugins [[lein-environ "1.0.3"]
+            [lein-cljsbuild "1.1.3"]]
+  :main ^:skip-aot test-streamer.server.main
   :aliases {"run-task" ["with-profile" "+repl" "run" "-m"]}
 
   :profiles
   {:dev  [:project/dev  :profiles/dev]
    :test [:project/test :profiles/test]
+   :repl {:resource-paths ^:replace ["resources" "target/figwheel"]
+          :prep-tasks     ^:replace [["javac"] ["compile"]]}
    :uberjar {:aot :all}
    :profiles/dev  {}
    :profiles/test {}
    :project/dev  {:dependencies [[reloaded.repl "0.2.1"]
-                                  [org.clojure/tools.namespace "0.2.11"]
-                                  [org.clojure/tools.nrepl "0.2.12"]]
+                                 [org.clojure/tools.namespace "0.2.11"]
+                                 [org.clojure/tools.nrepl "0.2.12"]
+                                 [binaryage/devtools "0.6.1"]
+                                 [com.cemerick/piggieback "0.2.1"]
+                                 [duct/figwheel-component "0.3.2"]
+                                 [figwheel "0.5.0-6"]]
                    :source-paths ["dev"]
                    :repl-options {:init-ns user}}
    :project/test {}}
-  :cljsbuild {
-    :builds {
-      :main {
-        :source-paths ["src/cljs"]
-        :jar true
-        :compiler {
-          :output-to "resources/public/js/test-streamer.js"
-          :optimizations :advanced}}}})
+  :cljsbuild
+  {:builds
+   {:main
+    {:source-paths ["src/cljs"]
+     :jar true
+     :compiler {:output-to "resources/public/js/test-streamer.min.js"
+                :optimizations :advanced}}}})
