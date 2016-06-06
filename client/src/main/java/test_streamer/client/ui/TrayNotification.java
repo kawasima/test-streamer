@@ -1,5 +1,7 @@
 package test_streamer.client.ui;
 
+import javafx.event.*;
+import javafx.event.Event;
 import test_streamer.client.ClientUI;
 import test_streamer.client.dto.TestSuiteResult;
 
@@ -9,6 +11,8 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
+import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * @author kawasima
@@ -17,6 +21,9 @@ public class TrayNotification implements ClientUI {
     private static final BufferedImage IMG_RUNNING;
     private static final BufferedImage IMG_DISCONNECT;
     private static final BufferedImage IMG_STANDBY;
+
+    private ConcurrentHashMap<EventType, EventHandler> handlers = new ConcurrentHashMap<>();
+
     static {
         try {
             IMG_RUNNING    = ImageIO.read(TrayNotification.class.getResource("/running.gif"));
@@ -32,10 +39,12 @@ public class TrayNotification implements ClientUI {
     public TrayNotification() {
         SystemTray tray = SystemTray.getSystemTray();
         PopupMenu menu = new PopupMenu();
-        Menu exitMenu = new Menu("Exit");
+        MenuItem exitMenu = new MenuItem("Exit");
         icon = new TrayIcon(IMG_DISCONNECT, "TestStreamer", menu);
 
-        exitMenu.addActionListener(actionEvent -> System.exit(0));
+        exitMenu.addActionListener(actionEvent -> {
+            System.exit(0);
+        });
 
         menu.add(exitMenu);
         try {
@@ -58,6 +67,17 @@ public class TrayNotification implements ClientUI {
     @Override
     public void standby() {
         icon.setImage(IMG_STANDBY);
+    }
+
+    @Override
+    public <T extends javafx.event.Event> void addEventHandler(EventType<T> eventType, EventHandler<? super T> handler) {
+        handlers.putIfAbsent(eventType, handler);
+    }
+
+    @Override
+    public void fireEvent(Event event) {
+        Optional.ofNullable(handlers.get(event.getEventType()))
+                .ifPresent(handler -> handler.handle(event));
     }
 
     @Override

@@ -17,7 +17,7 @@ You do *NOT* need to deploy any tests to client machines.
 ## Prerequisites
 
 * Leiningen 2
-* Java7 or higher (for server), Java6 or higher (for client)
+* Java8 or higher (for server), Java6 or higher (for client)
 
 ## Get started
 
@@ -29,7 +29,7 @@ Build client application and sign a jar file.
 % cd client
 % lein uberjar
 % keytool -genkey -alias test-streamer
-% jarsign target/client.jar test-streamer
+% jarsigner -keystore ~/.keystore -tsa http://timestamp.digicert.com target/client.jar test-streamer
 ```
 
 Build server application and install to local.
@@ -44,7 +44,7 @@ Run the TestStreamer server.
 ```shell
 % cd server
 % cp ../client/target/client.jar .
-% lein trampoline run -m test-streamer.server.core/main-for-test
+% lein repl
 ```
 
 ### Client
