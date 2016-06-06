@@ -1,6 +1,9 @@
 (ns test-streamer.server.component.undertow
   (:require [com.stuartsierra.component :as component]
             [ring.util.servlet :as servlet]
+            [hiccup.middleware :refer [wrap-base-url]]
+            [hiccup.util :refer [url]]
+            [compojure.core :refer [context]]
             [clojure.tools.logging :refer [info debug warn]])
   (:import [java.net InetAddress]
            [net.unit8.wscl ClassProvider]
@@ -43,7 +46,7 @@
                          (warn "Client close: " channel)
                          (when on-close (on-close channel nil))))))))
 
-(defn run-server [ring-handler & {port :port websockets :websockets}]
+(defn run-server [ring-handler & {:keys [port websockets prefix]}]
   (let [ring-servlet (servlet/servlet ring-handler)
         servlet-builder (.. (Servlets/deployment)
                             (setClassLoader (.getContextClassLoader (Thread/currentThread)))
@@ -65,28 +68,33 @@
 
     (doseq [ws websockets]
       (.addPrefixPath handler
-                      (:path ws)
+                      (str prefix (:path ws))
                       (Handlers/websocket
-                       (websocket-callback (dissoc ws :path))))) 
+                       (websocket-callback (dissoc ws :path)))))
     (let [server (.. (Undertow/builder)
                      (addHttpListener port "0.0.0.0")
-                     (setHandler (.addPrefixPath handler "/" (.start servlet-manager)))
-                     (setHandler (.addPrefixPath handler "/wscl"  (.start wscl-manager)))
+                     (setHandler (.addPrefixPath handler (str prefix "/")
+                                                 (.start servlet-manager)))
+                     (setHandler (.addPrefixPath handler (str prefix "/wscl")
+                                                 (.start wscl-manager)))
                      (build))]
       (.start server)
       server)))
 
-(defrecord UndertowServer [webapp socketapp port]
+(defrecord UndertowServer [webapp socketapp port prefix]
   component/Lifecycle
 
   (start [component]
-    (let [server (run-server (:handler webapp)
+    (let [server (run-server (context prefix []
+                                 (wrap-base-url (:handler webapp) prefix))
+                             :prefix prefix
                              :port port
                              :websockets [socketapp])]
       (assoc component :server server)))
 
   (stop [component]
-    (.stop (:server component))
+    (if-let [server (:server component)]
+      (.stop (:server component)))
     (dissoc component :server)))
 
 (defn undertow-server [options]

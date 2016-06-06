@@ -27,7 +27,7 @@
   :profiles
   {:dev  [:project/dev  :profiles/dev]
    :test [:project/test :profiles/test]
-   :repl {:resource-paths ^:replace ["resources" "target/figwheel"]
+   :repl {:resource-paths ^:replace ["resources" "dev-resources" "target/figwheel"]
           :prep-tasks     ^:replace [["javac"] ["compile"]]}
    :uberjar {:aot :all}
    :profiles/dev  {}

@@ -3,6 +3,7 @@
             [test-streamer.server.page :as page]
             [test-streamer.server.output :as output]
             [liberator.core :as liberator]
+            [hiccup.util :refer [url]]
             [clojure.tools.logging :refer [info debug]]
             [clojure.core.async :refer [go chan put!]])
   (:import [net.unit8.wscl ClassLoaderHolder]
@@ -96,7 +97,7 @@
     :post-redirect? (fn [ctx]
                       (case (get-in ctx [:representation :media-type])
                         ("text/html" "application/xhtml+xml")
-                        {:location (str "/test-shots/" (get ctx ::id))}
+                        {:location (str (url "test-shots/" (get ctx ::id)))}
                         false))
     :handle-ok "ok")
 

@@ -28,7 +28,7 @@
               dev-config))
 
 (defn new-system []
-  (into (system/new-system {})
+  (into (system/new-system config)
         {:figwheel (figwheel/server (:figwheel config))}))
 
 (reloaded.repl/set-init! new-system)

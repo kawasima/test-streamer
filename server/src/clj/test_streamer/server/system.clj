@@ -15,8 +15,8 @@
          :http (undertow-server (:http config))
          :dispatcher (dispatcher-component (:dispatcher config))
          :test-shots (test-shots-component (:test-shots config))
-         :webapp (webapp-component)
-         :socketapp (socketapp-component))
+         :webapp (webapp-component (:webapp config))
+         :socketapp (socketapp-component (:socketapp config)))
         (component/system-using
          {:http [:webapp :socketapp]
           :dispatcher [:test-shots]

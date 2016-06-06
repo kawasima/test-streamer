@@ -53,7 +53,7 @@
                    :entries (:entries test-shots)
                    :shots-queue (:shots-queue test-shots)}]
       (assoc component
-             :path "join"
+             :path "/join"
              :on-message (fn [ch message]
                            (handle-command (edn/read-string message) ch options))
              :on-close (fn [ch close-reason]
@@ -63,5 +63,5 @@
   (stop [component]
     (dissoc component :path :on-message :on-close)))
 
-(defn socketapp-component []
-  (map->SocketApp {}))
+(defn socketapp-component [options]
+  (map->SocketApp options))

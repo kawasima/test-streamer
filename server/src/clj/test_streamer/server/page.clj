@@ -1,22 +1,23 @@
 (ns test-streamer.server.page
   (:use [hiccup core page element])
-  (:require [ring.util.anti-forgery :refer [anti-forgery-field]]))
+  (:require [ring.util.anti-forgery :refer [anti-forgery-field]]
+            [hiccup.util :refer [url]]))
 
 (defmacro layout [{headers :headers} & body]
   `(html5
      [:head
-       [:link {:rel "stylesheet" :href "/css/pure-min.css"}]
-       [:link {:rel "stylesheet" :href "/css/test-streamer.css"}]
-       [:script {:src "/js/test-streamer.min.js"}]
+       [:link {:rel "stylesheet" :href (url "/css/pure-min.css")}]
+       [:link {:rel "stylesheet" :href (url "/css/test-streamer.css")}]
+       [:script {:src (url "/js/test-streamer.min.js")}]
        ~headers]
 
      [:body
        [:div.header
          [:div.pure-menu.pure-menu-open.pure-menu-horizontal
-          [:a.pure-menu-heading {:href "/"}
-           [:img {:src "/img/logo.png"}]]
+          [:a.pure-menu-heading {:href (url "/")}
+           [:img {:src (url "/img/logo.png")}]]
            [:ul
-             [:li [:a {:href "/client"} "client"]]]]]
+             [:li [:a {:href (url "/client")} "client"]]]]]
        [:div#content.pure-g
          [:div.pure-u-1 ~@body]]]))
 
@@ -55,15 +56,15 @@
                                          (count (vals (:results shot))))))]
             [:tr
               [:td
-                [:a {:href (str "/test-shots/" shot-id)} shot-id]]
+                [:a {:href (url "/test-shots/" shot-id)} shot-id]]
               [:td (:submitted-at shot)]
               [:td.number (format "%.1f%%" progress)]
               [:td
                 (when (= progress 100.0)
-                  [:a {:href (str "/test-shots/" shot-id "/report")} "report"])]]))])
+                  [:a {:href (url "/test-shots/" shot-id "/report")} "report"])]]))])
 
     [:h2.content-subhead "Submit tests"]
-    [:form.pure-form {:method "post" :action "/test-shots"}
+    [:form.pure-form {:method "post" :action (url "/test-shots")}
      (anti-forgery-field)
       [:fieldset
         [:input.pure-input-2-3 {:type "text" :name "include"}]
@@ -118,4 +119,5 @@
 (defn client-page []
   (layout
    [:h2 "TestStreamer Client"]
-   [:p [:a {:href "/test-streamer-client.jnlp"} "Download client"]]))
+   [:p [:a {:href (url "/test-streamer-client.jnlp")} "Download client"]]))
+

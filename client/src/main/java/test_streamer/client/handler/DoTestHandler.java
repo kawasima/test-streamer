@@ -10,6 +10,7 @@ import javax.websocket.DeploymentException;
 import javax.websocket.Session;
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -22,16 +23,18 @@ import static test_streamer.client.ClientConfig.ClientConfigKey.UI;
 public class DoTestHandler implements Handler {
     private static Map<UUID, ClassLoader> classLoaderCache = new HashMap<UUID, ClassLoader>();
     private ClientConfig config;
+    private List<ClientUI> uiList;
 
-    public DoTestHandler(ClientConfig config) {
+    public DoTestHandler(ClientConfig config, List<ClientUI> uiList) {
         this.config = config;
+        this.uiList = uiList;
     }
 
     @Override
     public void handle(Map<Keyword, Object> msg, Session session) {
         String className = msg.get(Keyword.newKeyword("name")).toString();
 
-        ((ClientUI)config.getObject(UI)).beginTest(className);
+        uiList.forEach(ui -> ui.beginTest(className));
 
         ClassLoader originalClassLoader = Thread.currentThread().getContextClassLoader();
         UUID classLoaderId = (UUID) msg.get(Keyword.newKeyword("classloader-id"));
@@ -62,13 +65,13 @@ public class DoTestHandler implements Handler {
         } finally {
             Thread.currentThread().setContextClassLoader(originalClassLoader);
         }
-        ((ClientUI)config.getObject(UI)).endTest(runListener.getResult());
+        uiList.forEach(ui -> ui.endTest(runListener.getResult()));
 
         ResultCommand command = new ResultCommand(className, (UUID) msg.get(Keyword.newKeyword("shot-id")));
         command.setResult(runListener.getResult());
         WebSocketUtil.send(session, command);
 
-        ((ClientUI)config.getObject(UI)).standby();
+        uiList.forEach(ClientUI::standby);
     }
 
     public void dispose() {

@@ -39,6 +39,6 @@
   (stop [component]
     (dissoc component :handler)))
 
-(defn webapp-component []
-  (map->WebappComponent {}))
+(defn webapp-component [options]
+  (map->WebappComponent options))
 

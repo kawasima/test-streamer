@@ -2,10 +2,7 @@ package test_streamer.client;
 
 import javafx.application.Application;
 import javafx.application.Platform;
-import javafx.event.EventType;
 import javafx.scene.Scene;
-import javafx.scene.layout.AnchorPane;
-import javafx.scene.layout.StackPane;
 import javafx.stage.Stage;
 import test_streamer.client.dto.ReadyCommand;
 import test_streamer.client.event.ConnectEvent;
@@ -21,13 +18,14 @@ import us.bpsm.edn.parser.Parsers;
 import javax.websocket.*;
 import java.awt.*;
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
 import java.security.*;
-import java.util.ArrayList;
+import java.util.*;
 import java.util.List;
-import java.util.Map;
 
-import static test_streamer.client.ClientConfig.ClientConfigKey.*;
+import static test_streamer.client.ClientConfig.ClientConfigKey.CLASS_PROVIDER_URL;
+import static test_streamer.client.ClientConfig.ClientConfigKey.SERVER_HOST;
 
 /**
  * Starts a client application.
@@ -48,7 +46,7 @@ public class Main extends Application {
         this.config = new ClientConfig();
         handlerLookup.registerHandler(
                 Keyword.newKeyword("do-test"),
-                new DoTestHandler(config));
+                new DoTestHandler(config, uiList));
         handlerLookup.registerHandler(
                 Keyword.newKeyword("class-provider-port"),
                 new ClassProviderPortHandler(config));
@@ -102,10 +100,11 @@ public class Main extends Application {
         }
 
         URI serverUri = URI.create(testServerUrl);
-        config.setString(SERVER_HOST, serverUri.getHost() + ":" + serverUri.getPort());
+        config.setString(SERVER_HOST, serverUri.getHost() + ":" + serverUri.getPort()
+                + Optional.ofNullable(serverUri.getPath()).orElse(""));
         uiList.forEach(ui -> ui.addEventHandler(ConnectEvent.CONNECT_SERVER, e -> {
             try {
-                connect(testServerUrl);
+                connect(testServerUrl + "/join");
             } catch (Exception ex) {
                 ui.disconnect();
             }
@@ -136,6 +135,18 @@ public class Main extends Application {
 
     }
 
+    protected String getTestStreamerUrl() {
+        Properties props = new Properties();
+        InputStream is = getClass().getResourceAsStream("/app.properties");
+        if (is == null) return null;
+        try {
+            props.load(is);
+            return props.getProperty("teststreamer.url");
+        } catch (IOException ex) {
+            return null;
+        }
+    }
+
     @Override
     public void start(Stage stage) throws Exception {
         Policy.setPolicy(new Policy() {
@@ -147,7 +158,10 @@ public class Main extends Application {
             }
         });
         Platform.setImplicitExit(false);
-        start(stage, "ws://localhost:5000/join");
+
+        String testStreamerUrl = Optional.ofNullable(getTestStreamerUrl())
+                .orElse("ws://localhost:5000");
+        start(stage, testStreamerUrl);
         stage.show();
     }
 
