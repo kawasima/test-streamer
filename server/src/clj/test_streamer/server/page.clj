@@ -1,6 +1,8 @@
 (ns test-streamer.server.page
   (:use [hiccup core page element])
   (:require [ring.util.anti-forgery :refer [anti-forgery-field]]
+            [environ.core :refer [env]]
+            [clojure.java.io :as io]
             [hiccup.util :refer [url]]))
 
 (defmacro layout [{headers :headers} & body]
@@ -63,12 +65,14 @@
                 (when (= progress 100.0)
                   [:a {:href (url "/test-shots/" shot-id "/report")} "report"])]]))])
 
-    [:h2.content-subhead "Submit tests"]
-    [:form.pure-form {:method "post" :action (url "/test-shots")}
-     (anti-forgery-field)
-      [:fieldset
-        [:input.pure-input-2-3 {:type "text" :name "include"}]
-        [:button.pure-button.pure-button-primary {:type "submit"} "execute"]]]))
+    (when (Boolean/valueOf (env :submittable true)) 
+      (html
+       [:h2.content-subhead "Submit tests"]
+       [:form.pure-form {:method "post" :action (url "/test-shots")}
+        (anti-forgery-field)
+        [:fieldset
+         [:input.pure-input-2-3 {:type "text" :name "include"}]
+         [:button.pure-button.pure-button-primary {:type "submit"} "execute"]]]))))
 
 (defn report-page [shot]
   (layout {}
@@ -119,5 +123,11 @@
 (defn client-page []
   (layout
    [:h2 "TestStreamer Client"]
-   [:p [:a {:href (url "/test-streamer-client.jnlp")} "Download client"]]))
+   (if (io/file "client.jar")
+     [:ui
+      [:li
+       [:a {:href (url "/test-streamer-client.jnlp")} "Download client (Web start)"]]
+      [:li
+       [:a {:href (url "/client.jar")} "Download client (Jar)"]]]
+     [:div "client.jar is not found."])))
 

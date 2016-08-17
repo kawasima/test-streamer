@@ -63,6 +63,7 @@
     (doseq [test tests]
       (put! shots-queue {:shot-id shot-id
                          :name test
+                         :retry-count 0
                          :classloader-id classloader-id}))
     shot-id))
 

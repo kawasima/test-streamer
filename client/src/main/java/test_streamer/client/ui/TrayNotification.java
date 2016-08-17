@@ -1,14 +1,13 @@
 package test_streamer.client.ui;
 
-import javafx.event.*;
 import javafx.event.Event;
+import javafx.event.EventHandler;
+import javafx.event.EventType;
 import test_streamer.client.ClientUI;
 import test_streamer.client.dto.TestSuiteResult;
 
 import javax.imageio.ImageIO;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.util.Optional;
