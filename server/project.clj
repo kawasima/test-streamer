@@ -8,7 +8,7 @@
                  [com.stuartsierra/component "0.3.1"]
                  [io.undertow/undertow-websockets-jsr "1.1.1.Final"]
                  [ring "1.5.0" :exclusions [org.clojure/tools.reader]]
-                 [ring/ring-defaults "0.2.0"]
+                 [ring/ring-defaults "0.2.0" :exclusions [javax.servlet/servlet-api]]
 
                  [compojure "1.5.0"]
                  [liberator "0.14.1"]

@@ -27,7 +27,7 @@
      :headers {"Content-Type" "application/x-java-jnlp-file"}
      :body (html
             (xml-declaration "UTF-8")
-            [:jnlp {:spec "8.0+"
+            [:jnlp {:spec "1.0+"
                     :codebase (str "http://"
                                    (:server-name req) ":"
                                    (:server-port req))

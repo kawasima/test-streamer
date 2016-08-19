@@ -4,6 +4,8 @@ import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
 import javafx.stage.Stage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import test_streamer.client.dto.ReadyCommand;
 import test_streamer.client.event.ConnectEvent;
 import test_streamer.client.handler.ClassProviderPortHandler;
@@ -33,6 +35,8 @@ import static test_streamer.client.ClientConfig.ClientConfigKey.SERVER_HOST;
  * @author kawasima
  */
 public class Main extends Application {
+    private static final Logger LOG = LoggerFactory.getLogger(Main.class);
+
     private Session session;
     private Parser ednParser = Parsers.newParser(Parsers.defaultConfiguration());
     private final HandlerLookup handlerLookup = new HandlerLookup();
@@ -161,6 +165,7 @@ public class Main extends Application {
 
         String testStreamerUrl = Optional.ofNullable(getTestStreamerUrl())
                 .orElse("ws://localhost:5000");
+        LOG.info("teststreamer url = {}", testStreamerUrl);
         start(stage, testStreamerUrl);
         stage.show();
     }
