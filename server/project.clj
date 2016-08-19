@@ -14,7 +14,6 @@
                  [liberator "0.14.1"]
                  [meta-merge "1.0.0"]
                  [environ "1.1.0"]
-                 [javax.servlet/servlet-api "2.5"]
                  [org.clojure/core.async "0.2.374"]
                  [org.clojure/clojurescript "1.8.51"]]
 
