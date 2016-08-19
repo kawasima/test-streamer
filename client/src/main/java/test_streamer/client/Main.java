@@ -97,6 +97,7 @@ public class Main extends Application {
             stage.setOnCloseRequest(event -> {
                 Platform.runLater(() -> destroy());
                 stage.close();
+                Platform.exit();
             });
             stage.setScene(scene);
         } catch (Exception ex) {
@@ -107,15 +108,17 @@ public class Main extends Application {
         int port = serverUri.getPort();
         config.setString(SERVER_HOST, serverUri.getHost() + (port > 0 ? ":" + port : "")
                 + Optional.ofNullable(serverUri.getPath()).orElse(""));
+
+        String joinUrl = testServerUrl + (testServerUrl.endsWith("/")? "" : "/") + "join";
         uiList.forEach(ui -> ui.addEventHandler(ConnectEvent.CONNECT_SERVER, e -> {
             try {
-                connect(testServerUrl + "/join");
+                connect(joinUrl);
             } catch (Exception ex) {
                 ui.disconnect();
             }
         }));
         try {
-            connect(testServerUrl);
+            connect(joinUrl);
         } catch (Exception ex) {
             uiList.forEach(ClientUI::disconnect);
         }

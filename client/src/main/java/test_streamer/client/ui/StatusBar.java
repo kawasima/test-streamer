@@ -1,8 +1,5 @@
 package test_streamer.client.ui;
 
-import javafx.event.Event;
-import javafx.event.EventType;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
