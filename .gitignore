@@ -2,7 +2,7 @@
 .nrepl-*
 target
 server/pom.xml
-examples/*/pom.xml
+examples/simple-server/pom.xml
 *.gz
 *.jar
 *.log
