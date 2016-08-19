@@ -104,7 +104,8 @@ public class Main extends Application {
         }
 
         URI serverUri = URI.create(testServerUrl);
-        config.setString(SERVER_HOST, serverUri.getHost() + ":" + serverUri.getPort()
+        int port = serverUri.getPort();
+        config.setString(SERVER_HOST, serverUri.getHost() + (port > 0 ? ":" + port : "")
                 + Optional.ofNullable(serverUri.getPath()).orElse(""));
         uiList.forEach(ui -> ui.addEventHandler(ConnectEvent.CONNECT_SERVER, e -> {
             try {
