@@ -2,7 +2,7 @@ TestStreamer
 =============
 
 TestStreamer is a distriuted testing tool.
-You do *NOT* need to deploy any tests to client machines. 
+You do *NOT* need to deploy any tests to client machines.
 
 ![architecture](http://farm8.staticflickr.com/7451/13056300083_727cdcb781_o.png)
 
@@ -17,7 +17,7 @@ You do *NOT* need to deploy any tests to client machines.
 ## Prerequisites
 
 * Leiningen 2
-* Java8 or higher (for server), Java6 or higher (for client)
+* Java8 or higher (for server and client)
 
 ## Get started
 
@@ -27,16 +27,9 @@ Build client application and sign a jar file.
 
 ```shell
 % cd client
-% lein uberjar
+%
 % keytool -genkey -alias test-streamer
-% jarsigner -keystore ~/.keystore -tsa http://timestamp.digicert.com target/client.jar test-streamer
-```
-
-Build server application and install to local.
-
-```shell
-% cd server
-% lein install
+% mvn -Dteststreamer.url=ws://xxxx -Djarsigner.storepass=xxx package
 ```
 
 Run the TestStreamer server.
@@ -45,13 +38,14 @@ Run the TestStreamer server.
 % cd server
 % cp ../client/target/client.jar .
 % lein repl
+user=> (go)
 ```
 
 ### Client
 
 Access `http://[TestStreamer server IP]:[TestStreamer server port (default: 5000)]/client` in a your browser.
 
-And click the Launch button.
+When you download and execute client.jar, the client will connect to test streamer server automatically and wait requests for testing.
 
 
 ## Build setting for your application
@@ -74,7 +68,7 @@ In that case, all you really do is add to pom.xml as following:
       <plugin>
         <groupId>net.unit8.maven.plugins</groupId>
         <artifactId>test-streamer-maven-plugin</artifactId>
-        <version>0.1.0-SNAPSHOT</version>
+        <version>0.1.0</version>
         <configuration>
           <testStreamerUrl>http://test-streamer.local:5000</testStreamerUrl>
         </configuration>
@@ -92,4 +86,3 @@ In that case, all you really do is add to pom.xml as following:
 ## License
 
 Eclipse Public License - v 1.0
-

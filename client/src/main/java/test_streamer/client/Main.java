@@ -171,6 +171,7 @@ public class Main extends Application {
                 .orElse("ws://localhost:5000");
         LOG.info("teststreamer url = {}", testStreamerUrl);
         start(stage, testStreamerUrl);
+        stage.sizeToScene();
         stage.show();
     }
 
