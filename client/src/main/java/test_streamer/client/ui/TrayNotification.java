@@ -41,9 +41,7 @@ public class TrayNotification implements ClientUI {
         MenuItem exitMenu = new MenuItem("Exit");
         icon = new TrayIcon(IMG_DISCONNECT, "TestStreamer", menu);
 
-        exitMenu.addActionListener(actionEvent -> {
-            System.exit(0);
-        });
+        exitMenu.addActionListener(actionEvent -> System.exit(0));
 
         menu.add(exitMenu);
         try {

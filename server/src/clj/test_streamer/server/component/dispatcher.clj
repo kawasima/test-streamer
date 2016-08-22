@@ -23,7 +23,7 @@
             (info "Dispatch test (" (:name test-request) ") to " (.hashCode ch))
             (swap! clients assoc-in [ch :status] :busy)
             (WebSockets/sendText (pr-str (assoc test-request :command :do-test)) ch nil)
-            (go (<! timeout timeout-ms)
+            (go (<! (timeout timeout-ms))
               (let [result (->> @(:entries test-shots)
                                 (get-in [(:shot-id test-request) :results])
                                 (filter #(= (:name test-request) (:name %)))

@@ -1,5 +1,8 @@
 package test_streamer.client;
 
+import com.sun.corba.se.spi.activation.Server;
+import io.undertow.websockets.client.WebSocketClient;
+import io.undertow.websockets.jsr.ServerWebSocketContainer;
 import javafx.application.Application;
 import javafx.application.Platform;
 import javafx.scene.Scene;
@@ -56,9 +59,20 @@ public class Main extends Application {
                 new ClassProviderPortHandler(config));
     }
 
+    private WebSocketClient.ConnectionBuilder setProxy(WebSocketClient.ConnectionBuilder builder) {
+        String proxy = System.getenv("http_proxy");
+        if (proxy == null) {
+            proxy = System.getenv("HTTP_PROXY");
+        }
+        return (proxy != null) ? builder.setProxyUri(URI.create(proxy)) : builder;
+    }
+
     public Session connect(final String testServerUrl) throws IOException, DeploymentException {
         URI uri = URI.create(testServerUrl);
-        WebSocketContainer wsContainer = ContainerProvider.getWebSocketContainer();
+        ServerWebSocketContainer wsContainer = (ServerWebSocketContainer) ContainerProvider.getWebSocketContainer();
+        WebSocketClient.ConnectionBuilder builder = new WebSocketClient.ConnectionBuilder(wsContainer.getXnioWorker(), wsContainer.getBufferPool(), uri);
+        builder = setProxy(builder);
+
         ClientEndpointConfig cec = ClientEndpointConfig.Builder.create().build();
         session = wsContainer.connectToServer(new Endpoint() {
             @Override
@@ -80,7 +94,7 @@ public class Main extends Application {
             public void onClose(final Session session, CloseReason closeReason) {
                 uiList.forEach(ClientUI::disconnect);
             }
-        }, cec, uri);
+        }, cec, builder);
 
         return session;
     }
