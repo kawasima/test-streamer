@@ -1,7 +1,9 @@
 package test_streamer.client;
 
 import com.sun.corba.se.spi.activation.Server;
+import io.undertow.websockets.WebSocketExtension;
 import io.undertow.websockets.client.WebSocketClient;
+import io.undertow.websockets.client.WebSocketClientNegotiation;
 import io.undertow.websockets.jsr.ServerWebSocketContainer;
 import javafx.application.Application;
 import javafx.application.Platform;
@@ -59,11 +61,24 @@ public class Main extends Application {
                 new ClassProviderPortHandler(config));
     }
 
+    private static List<WebSocketExtension> toExtensionList(final List<Extension> extensions) {
+        List<WebSocketExtension> ret = new ArrayList<>();
+        for (Extension e : extensions) {
+            final List<WebSocketExtension.Parameter> parameters = new ArrayList<>();
+            for (Extension.Parameter p : e.getParameters()) {
+                parameters.add(new WebSocketExtension.Parameter(p.getName(), p.getValue()));
+            }
+            ret.add(new WebSocketExtension(e.getName(), parameters));
+        }
+        return ret;
+    }
+
     private WebSocketClient.ConnectionBuilder setProxy(WebSocketClient.ConnectionBuilder builder) {
         String proxy = System.getenv("http_proxy");
         if (proxy == null) {
             proxy = System.getenv("HTTP_PROXY");
         }
+        LOG.info("http_proxy = {}", proxy);
         return (proxy != null) ? builder.setProxyUri(URI.create(proxy)) : builder;
     }
 
@@ -74,6 +89,9 @@ public class Main extends Application {
         builder = setProxy(builder);
 
         ClientEndpointConfig cec = ClientEndpointConfig.Builder.create().build();
+        WebSocketClientNegotiation clientNegotiation = new ClientNegotiation(cec.getPreferredSubprotocols(), toExtensionList(cec.getExtensions()), cec);
+        builder = builder.setClientNegotiation(clientNegotiation);
+
         session = wsContainer.connectToServer(new Endpoint() {
             @Override
             public void onOpen(final Session session, EndpointConfig endpointConfig) {
