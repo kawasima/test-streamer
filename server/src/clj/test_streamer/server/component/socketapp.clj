@@ -35,7 +35,7 @@
     (if-let [client-exception (get-in msg [:result :client-exception])]
       (do
         ;; Push back when unexpected errors occurs in a client.
-        (put! shots-queue (select-keys msg [:shot-id :name :classloader-id])) 
+        (put! shots-queue (select-keys msg [:shot-id :name :classloader-id]))
         (swap! clients assoc-in [ch :status] :error))
       (do
         (swap! entries assoc-in [(str (:shot-id msg)) :results (:name msg)] (:result msg))

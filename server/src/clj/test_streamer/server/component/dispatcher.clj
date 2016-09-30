@@ -24,10 +24,8 @@
             (swap! clients assoc-in [ch :status] :busy)
             (WebSockets/sendText (pr-str (assoc test-request :command :do-test)) ch nil)
             (go (<! (timeout timeout-ms))
-              (let [result (->> @(:entries test-shots)
-                                (get-in [(:shot-id test-request) :results])
-                                (filter #(= (:name test-request) (:name %)))
-                                first)]
+              (let [result (-> @(:entries test-shots)
+                               (get-in [(str (:shot-id test-request)) :results (:name test-request)]))]
                 (when-not result
                   (swap! (:entries test-shots) assoc-in
                          [(:shot-id test-request) :results (:name test-request)]

@@ -15,7 +15,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static test_streamer.client.ClientConfig.ClientConfigKey.CLASS_PROVIDER_URL;
-import static test_streamer.client.ClientConfig.ClientConfigKey.UI;
 
 /**
  * @author kawasima
