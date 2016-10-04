@@ -12,7 +12,7 @@
     <groupId>net.unit8.teststreamer</groupId>
     <artifactId>test-streamer-client</artifactId>
     <packaging>jar</packaging>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.0</version>
     <name>test-streamer-client</name>
     <description>A client for test streamer</description>
 
